@@ -1,3 +1,4 @@
+import leadDictionary from "@/scoring/leadDictionary.js";
 import type { Lead, LeadScoreBreakdown, LeadScoreConfidence } from "@/types/lead";
 
 type ScoringCategoryKey =
@@ -6,6 +7,15 @@ type ScoringCategoryKey =
   | "behavioralIntent"
   | "fitReadiness"
   | "dataConfidence";
+
+type DictionarySectionKey =
+  | "financialReadiness"
+  | "urgencyTimeline"
+  | "behavioralIntent"
+  | "fitReadiness"
+  | "dataConfidence";
+
+type DictionaryTierName = "strong" | "medium" | "weak" | "negative" | "sellerSignals";
 
 type ScoreCategoryRule = {
   label: string;
@@ -18,24 +28,229 @@ type CategoryScore = {
   reason: string;
 };
 
+type DictionaryBucket = {
+  weight?: number;
+  keywords?: string[];
+  phrases?: string[];
+  regexPatterns?: RegExp[];
+  notes?: string;
+};
+
+type DictionarySection = Partial<Record<DictionaryTierName, DictionaryBucket>> & {
+  conflictSignals?: string[];
+};
+
+type DictionaryMatch = {
+  sourceType: "keyword" | "phrase" | "regex";
+  value: string;
+};
+
+type MatchedDictionarySignal = {
+  section: DictionarySectionKey;
+  tier: DictionaryTierName;
+  source: "notes" | "timeline" | "budget";
+  weight: number;
+  note: string | undefined;
+  matched: DictionaryMatch[];
+};
+
+type StructuredBudgetSignal = {
+  hasBudget: boolean;
+  isSpecific: boolean;
+  isVague: boolean;
+  reinforcedByNotes: boolean;
+};
+
+type StructuredTimelineSignal = {
+  source: "timeline" | "notes" | "combined";
+  primaryTier: DictionaryTierName | null;
+  primarySignal: MatchedDictionarySignal | null;
+  contradiction: boolean;
+};
+
 export type NoteSignals = {
-  matchedKeywords: string[];
+  matchedTerms: string[];
+  matchedSignals: Record<DictionarySectionKey, MatchedDictionarySignal[]>;
+  contradictions: string[];
+  ambiguousPhrases: string[];
   financialSignal: "verified_funds" | "strong_signal" | null;
-  urgencySignal: "immediate" | "under_3_months" | "three_to_six_months" | "six_to_twelve_months" | "browsing" | null;
-  intentSignal: "requested_showing" | "property_questions" | "engaged" | "general_inquiry" | "browsing" | null;
+  urgencySignal:
+    | "immediate"
+    | "under_3_months"
+    | "three_to_six_months"
+    | "six_to_twelve_months"
+    | "browsing"
+    | null;
+  intentSignal:
+    | "requested_showing"
+    | "property_questions"
+    | "engaged"
+    | "general_inquiry"
+    | "browsing"
+    | null;
   hasLocation: boolean;
   propertyType: string | null;
   hasConstraints: boolean;
   vagueLanguage: boolean;
   strongSignalCount: number;
+  budget: StructuredBudgetSignal;
+  timeline: StructuredTimelineSignal;
 };
 
 export type ScoreLeadResult = {
+  extractedSignals: NoteSignals;
+  categoryScores: Record<ScoringCategoryKey, number>;
+  confidenceScore: number;
+  finalScore: number;
+  label: string;
   score: number;
   breakdown: LeadScoreBreakdown;
   explanation: string[];
   confidence: LeadScoreConfidence;
 };
+
+const dictionary = leadDictionary as {
+  financialReadiness: DictionarySection;
+  urgencyTimeline: DictionarySection;
+  behavioralIntent: DictionarySection;
+  fitReadiness: DictionarySection;
+  dataConfidence: DictionarySection;
+  globalRegexLibrary: {
+    budgetPatterns: RegExp[];
+    timelinePatterns: RegExp[];
+    bedBathPatterns: RegExp[];
+    locationPatterns: RegExp[];
+    contactValidationPatterns: RegExp[];
+    agentShorthandPatterns: RegExp[];
+  };
+  ambiguousOrEdgeCasePhrases: {
+    phrases: string[];
+    notes: string;
+  };
+};
+
+const DICTIONARY_SECTIONS: DictionarySectionKey[] = [
+  "financialReadiness",
+  "urgencyTimeline",
+  "behavioralIntent",
+  "fitReadiness",
+  "dataConfidence",
+];
+
+const DICTIONARY_TIERS: DictionaryTierName[] = [
+  "strong",
+  "medium",
+  "weak",
+  "negative",
+  "sellerSignals",
+];
+
+const PROPERTY_TYPE_HINTS = [
+  "condo",
+  "townhome",
+  "townhouse",
+  "single family",
+  "single-family",
+  "multi family",
+  "multi-family",
+  "duplex",
+  "triplex",
+  "co-op",
+  "coop",
+  "loft",
+  "land",
+];
+
+const CONSTRAINT_HINTS = [
+  "bed",
+  "bath",
+  "commute",
+  "school",
+  "parking",
+  "garage",
+  "yard",
+  "office",
+  "pool",
+  "pet",
+  "laundry",
+  "doorman",
+  "elevator",
+  "path",
+];
+
+const LOCATION_HINTS = [
+  "jersey city",
+  "hoboken",
+  "weehawken",
+  "union city",
+  "bayonne",
+  "brooklyn",
+  "queens",
+  "manhattan",
+  "downtown",
+  "journal square",
+  "hamilton park",
+  "newport",
+  "paulus hook",
+  "path",
+];
+
+const VERIFIED_FINANCIAL_HINTS = [
+  "pre-approved",
+  "preapproved",
+  "pre approval",
+  "preapproval",
+  "proof of funds",
+  "pof",
+  "fully approved",
+  "underwritten",
+  "underwriting",
+  "approved for mortgage",
+  "financing secured",
+  "rate locked",
+  "locked rate",
+];
+
+const STRONG_FINANCIAL_HINTS = [
+  "cash buyer",
+  "all cash",
+  "cash deal",
+  "down payment ready",
+  "funds verified",
+  "lender lined up",
+  "working with lender",
+];
+
+const SHOWING_INTENT_HINTS = [
+  "showing",
+  "tour",
+  "offer",
+  "appointment",
+  "countered",
+  "next steps",
+];
+
+const PROPERTY_QUESTION_HINTS = [
+  "hoa",
+  "taxes",
+  "disclosure",
+  "comps",
+  "fees",
+  "floor plan",
+  "inspection",
+  "listing",
+];
+
+const ENGAGEMENT_HINTS = [
+  "engaged",
+  "responds fast",
+  "quick to respond",
+  "followed up",
+  "called back",
+  "returned call",
+  "updates",
+  "open house",
+];
 
 export const SCORE_INTERPRETATION = [
   {
@@ -126,159 +341,67 @@ export const SCORING_RUBRIC: Array<{
 type ScoreableLead = Partial<
   Pick<
     Lead,
-  "name" | "email" | "phone" | "budget" | "timeline" | "notes" | "score" | "score_breakdown" | "score_explanation"
+    | "name"
+    | "email"
+    | "phone"
+    | "budget"
+    | "timeline"
+    | "notes"
+    | "score"
+    | "score_breakdown"
+    | "score_explanation"
   >
 >;
 
-const VERIFIED_FUNDS_KEYWORDS = [
-  "pre-approved",
-  "pre approved",
-  "preapproved",
-  "proof of funds",
-  "pof",
-];
-
-const STRONG_FINANCIAL_KEYWORDS = [
-  "cash buyer",
-  "all cash",
-  "cash offer",
-  "cash purchase",
-];
-
-const IMMEDIATE_KEYWORDS = ["asap", "immediately", "immediate", "right away", "this month", "urgent"];
-const BROWSING_KEYWORDS = ["just browsing", "browsing", "window shopping", "curious", "exploring options"];
-const SHOWING_KEYWORDS = ["showing", "tour", "walkthrough", "see the property", "visit the property", "schedule a visit"];
-const PROPERTY_QUESTION_KEYWORDS = ["hoa", "taxes", "school district", "seller disclosure", "square footage", "inspection", "listing"];
-const ENGAGED_KEYWORDS = ["responsive", "replied", "followed up", "called back", "engaged", "active conversation"];
-const GENERAL_INQUIRY_KEYWORDS = ["interested", "looking for", "inquiry", "wants info", "asking about"];
-const PROPERTY_TYPES = ["condo", "townhome", "townhouse", "single-family", "single family", "duplex", "multi-family", "multifamily", "land"];
-const CONSTRAINT_KEYWORDS = [
-  "bed",
-  "bath",
-  "commute",
-  "school",
-  "garage",
-  "yard",
-  "office",
-  "pool",
-  "pet",
-  "walkable",
-];
-const VAGUE_KEYWORDS = ["flexible", "open to anything", "not sure", "tbd", "whatever works", "no rush"];
-
-export function extractSignalsFromNotes(notes: string | null | undefined): NoteSignals {
-  const raw = notes ?? "";
-  const normalized = normalizeText(raw);
-  const matchedKeywords = new Set<string>();
-
-  const hasVerifiedFunds = matchesAny(normalized, VERIFIED_FUNDS_KEYWORDS, matchedKeywords);
-  const hasStrongFinancial = matchesAny(normalized, STRONG_FINANCIAL_KEYWORDS, matchedKeywords);
-  const isImmediate = matchesAny(normalized, IMMEDIATE_KEYWORDS, matchedKeywords);
-  const isBrowsing = matchesAny(normalized, BROWSING_KEYWORDS, matchedKeywords);
-  const requestedShowing = matchesAny(normalized, SHOWING_KEYWORDS, matchedKeywords);
-  const askedPropertyQuestions = matchesAny(normalized, PROPERTY_QUESTION_KEYWORDS, matchedKeywords);
-  const engaged = matchesAny(normalized, ENGAGED_KEYWORDS, matchedKeywords);
-  const generalInquiry = matchesAny(normalized, GENERAL_INQUIRY_KEYWORDS, matchedKeywords);
-  const vagueLanguage = matchesAny(normalized, VAGUE_KEYWORDS, matchedKeywords);
-  const propertyType = PROPERTY_TYPES.find((type) => normalized.includes(type)) ?? null;
-  if (propertyType) {
-    matchedKeywords.add(propertyType);
-  }
-
-  const hasConstraints = CONSTRAINT_KEYWORDS.some((keyword) => {
-    const hit = normalized.includes(keyword);
-    if (hit) {
-      matchedKeywords.add(keyword);
-    }
-    return hit;
+export function extractSignalsFromNotes(
+  notes: string | null | undefined,
+  context?: { timeline?: string | null | undefined; budget?: string | null | undefined },
+): NoteSignals {
+  return extractLeadSignals({
+    notes,
+    timeline: context?.timeline,
+    budget: context?.budget,
   });
-
-  const hasLocation =
-    /\b(in|near|around|moving to|relocating to|looking in|prefer|prefers)\s+[a-z0-9][a-z0-9\s-]{2,}\b/.test(normalized) ||
-    /\b(downtown|midtown|uptown|suburbs|waterfront|school district)\b/.test(normalized);
-  if (hasLocation) {
-    matchedKeywords.add("location");
-  }
-
-  let urgencySignal: NoteSignals["urgencySignal"] = null;
-  if (isImmediate) {
-    urgencySignal = "immediate";
-  } else if (/\b(1|2|3)\s*(month|months|mo)\b/.test(normalized) || /\b(30|60|90)\s*days?\b/.test(normalized)) {
-    urgencySignal = "under_3_months";
-  } else if (/\b(4|5|6)\s*(month|months|mo)\b/.test(normalized)) {
-    urgencySignal = "three_to_six_months";
-  } else if (/\b(7|8|9|10|11|12)\s*(month|months|mo)\b/.test(normalized) || /\bwithin a year\b/.test(normalized)) {
-    urgencySignal = "six_to_twelve_months";
-  } else if (isBrowsing) {
-    urgencySignal = "browsing";
-  }
-
-  let intentSignal: NoteSignals["intentSignal"] = null;
-  if (requestedShowing) {
-    intentSignal = "requested_showing";
-  } else if (askedPropertyQuestions) {
-    intentSignal = "property_questions";
-  } else if (engaged) {
-    intentSignal = "engaged";
-  } else if (generalInquiry) {
-    intentSignal = "general_inquiry";
-  } else if (isBrowsing) {
-    intentSignal = "browsing";
-  }
-
-  const strongSignalCount = [
-    hasVerifiedFunds,
-    hasStrongFinancial,
-    isImmediate,
-    requestedShowing,
-    askedPropertyQuestions,
-    hasLocation,
-    Boolean(propertyType),
-    hasConstraints,
-  ].filter(Boolean).length;
-
-  return {
-    matchedKeywords: Array.from(matchedKeywords),
-    financialSignal: hasVerifiedFunds ? "verified_funds" : hasStrongFinancial ? "strong_signal" : null,
-    urgencySignal,
-    intentSignal,
-    hasLocation,
-    propertyType,
-    hasConstraints,
-    vagueLanguage,
-    strongSignalCount,
-  };
 }
 
 export function scoreFinancial(lead: ScoreableLead): CategoryScore {
-  const notesSignals = extractSignalsFromNotes(lead.notes);
-  const budget = normalizeText(lead.budget);
+  const signals = extractLeadSignals(lead);
+  const financialSignals = signals.matchedSignals.financialReadiness;
 
-  if (notesSignals.financialSignal === "verified_funds") {
+  if (signals.financialSignal === "verified_funds") {
     return {
       points: 30,
-      reason: "Verified funds signal detected from notes, such as pre-approval or proof of funds.",
+      reason: "Dictionary signals show verified financing readiness such as pre-approval or proof of funds.",
     };
   }
 
-  if (notesSignals.financialSignal === "strong_signal") {
+  if (signals.financialSignal === "strong_signal") {
     return {
       points: 20,
-      reason: "Strong financial readiness detected from notes, such as a cash buyer signal.",
+      reason: "Dictionary signals show strong financial readiness, such as cash-buyer or lender-readiness language.",
     };
   }
 
-  if (hasClearBudget(lead.budget)) {
+  if (signals.budget.isSpecific) {
     return {
       points: 10,
-      reason: "Budget is clearly specified.",
+      reason: signals.budget.reinforcedByNotes
+        ? "Budget is clearly specified and reinforced by notes."
+        : "Budget is clearly specified.",
     };
   }
 
-  if (budget && isVagueBudget(budget)) {
+  if (signals.budget.hasBudget) {
     return {
       points: 5,
-      reason: "Budget direction exists, but it is still vague.",
+      reason: "Budget is present but still vague.",
+    };
+  }
+
+  if (hasTier(financialSignals, "negative")) {
+    return {
+      points: 0,
+      reason: "Financial notes contain negative qualification signals and no clear readiness evidence.",
     };
   }
 
@@ -289,53 +412,100 @@ export function scoreFinancial(lead: ScoreableLead): CategoryScore {
 }
 
 export function scoreUrgency(lead: ScoreableLead): CategoryScore {
-  const combined = normalizeText([lead.timeline, lead.notes].filter(Boolean).join(" "));
-  const signals = extractSignalsFromNotes(lead.notes);
+  const signals = extractLeadSignals(lead);
+  const timelineSignals = signals.matchedSignals.urgencyTimeline;
+  const primary = signals.timeline.primarySignal;
 
-  if (signals.urgencySignal === "immediate" || matchesAny(combined, IMMEDIATE_KEYWORDS)) {
-    return { points: 25, reason: "Lead appears ready to move immediately." };
+  if (signals.urgencySignal === "immediate") {
+    return {
+      points: 25,
+      reason: primary?.source === "timeline"
+        ? "Structured timeline indicates the lead is ready now or under active time pressure."
+        : "Notes indicate the lead is ready now or under active time pressure.",
+    };
   }
 
-  if (signals.urgencySignal === "under_3_months" || /\b(1|2|3)\s*(month|months|mo)\b/.test(combined) || /\b(30|60|90)\s*days?\b/.test(combined)) {
-    return { points: 20, reason: "Timeline indicates a move within three months." };
+  if (signals.urgencySignal === "under_3_months") {
+    return {
+      points: 20,
+      reason: "Timeline suggests a move within roughly three months.",
+    };
   }
 
-  if (signals.urgencySignal === "three_to_six_months" || /\b(4|5|6)\s*(month|months|mo)\b/.test(combined) || /\b3[-– ]?6 months\b/.test(combined)) {
-    return { points: 12, reason: "Timeline falls in the three-to-six month range." };
+  if (signals.urgencySignal === "three_to_six_months") {
+    return {
+      points: 12,
+      reason: "Timeline falls in the three-to-six month range.",
+    };
   }
 
-  if (signals.urgencySignal === "six_to_twelve_months" || /\b(7|8|9|10|11|12)\s*(month|months|mo)\b/.test(combined) || /\b6[-– ]?12 months\b/.test(combined) || /\bwithin a year\b/.test(combined)) {
-    return { points: 5, reason: "Timeline is still active, but farther out at six to twelve months." };
+  if (signals.urgencySignal === "six_to_twelve_months") {
+    return {
+      points: 5,
+      reason: "Timeline is active but farther out, around six to twelve months.",
+    };
   }
 
-  return { points: 0, reason: "Lead looks long-term or is still browsing." };
+  if (hasTier(timelineSignals, "negative")) {
+    return {
+      points: 0,
+      reason: "Dictionary signals indicate the lead is browsing, delayed, or not moving soon.",
+    };
+  }
+
+  return {
+    points: 0,
+    reason: "Urgency is unclear or too soft to materially raise priority.",
+  };
 }
 
 export function scoreIntent(lead: ScoreableLead): CategoryScore {
-  const combined = normalizeText([lead.notes, lead.timeline].filter(Boolean).join(" "));
-  const signals = extractSignalsFromNotes(lead.notes);
+  const signals = extractLeadSignals(lead);
+  const intentSignals = signals.matchedSignals.behavioralIntent;
 
-  if (signals.intentSignal === "requested_showing" || matchesAny(combined, SHOWING_KEYWORDS)) {
-    return { points: 20, reason: "Lead requested a showing or property visit." };
+  if (signals.intentSignal === "requested_showing") {
+    return {
+      points: 20,
+      reason: "Behavioral signals indicate a showing, tour, offer step, or another concrete action.",
+    };
   }
 
-  if (signals.intentSignal === "property_questions" || matchesAny(combined, PROPERTY_QUESTION_KEYWORDS)) {
-    return { points: 15, reason: "Lead asked specific property questions, which signals concrete interest." };
+  if (signals.intentSignal === "property_questions") {
+    return {
+      points: 15,
+      reason: "Behavioral signals show specific listing or property questions.",
+    };
   }
 
-  if (signals.intentSignal === "engaged" || matchesAny(combined, ENGAGED_KEYWORDS)) {
-    return { points: 10, reason: "Lead is engaged and responsive." };
+  if (signals.intentSignal === "engaged") {
+    return {
+      points: 10,
+      reason: "Behavioral signals show the lead is engaged and responsive.",
+    };
   }
 
-  if (signals.intentSignal === "general_inquiry" || matchesAny(combined, GENERAL_INQUIRY_KEYWORDS)) {
-    return { points: 5, reason: "Lead has shown general interest but limited behavioral intent." };
+  if (signals.intentSignal === "general_inquiry") {
+    return {
+      points: 5,
+      reason: "Behavior is still top-of-funnel and general inquiry oriented.",
+    };
   }
 
-  return { points: 0, reason: "Behavioral intent is weak or still in browsing mode." };
+  if (hasTier(intentSignals, "negative")) {
+    return {
+      points: 0,
+      reason: "Behavioral notes suggest the lead is disengaged, invalid, or not worth active follow-up.",
+    };
+  }
+
+  return {
+    points: 0,
+    reason: "There is not enough behavioral evidence yet to raise intent score.",
+  };
 }
 
 export function scoreFit(lead: ScoreableLead): CategoryScore {
-  const signals = extractSignalsFromNotes(lead.notes);
+  const signals = extractLeadSignals(lead);
   let points = 0;
   const reasons: string[] = [];
 
@@ -344,7 +514,7 @@ export function scoreFit(lead: ScoreableLead): CategoryScore {
     reasons.push("location specified");
   }
 
-  if (hasClearBudget(lead.budget)) {
+  if (signals.budget.isSpecific) {
     points += 3;
     reasons.push("budget range specified");
   }
@@ -356,7 +526,7 @@ export function scoreFit(lead: ScoreableLead): CategoryScore {
 
   if (signals.hasConstraints) {
     points += 4;
-    reasons.push("buyer constraints captured");
+    reasons.push("constraints captured");
   }
 
   if (signals.vagueLanguage) {
@@ -371,35 +541,67 @@ export function scoreFit(lead: ScoreableLead): CategoryScore {
 }
 
 export function scoreConfidence(lead: ScoreableLead): CategoryScore {
-  const signals = extractSignalsFromNotes(lead.notes);
+  const signals = extractLeadSignals(lead);
+  const confidenceSignals = signals.matchedSignals.dataConfidence;
   const hasName = Boolean(lead.name?.trim());
   const hasEmail = Boolean(lead.email?.trim());
   const hasPhone = Boolean(lead.phone?.trim());
   const hasBudget = Boolean(lead.budget?.trim());
   const hasTimeline = Boolean(lead.timeline?.trim());
-  const noteLength = lead.notes?.trim().length ?? 0;
-  const fieldCount = [hasName, hasEmail, hasPhone, hasBudget, hasTimeline, noteLength > 0].filter(Boolean).length;
+  const notesLength = lead.notes?.trim().length ?? 0;
+  const completenessCount = [hasName, hasEmail, hasPhone, hasBudget, hasTimeline, notesLength > 0].filter(Boolean).length;
+  const contradictionPenalty = signals.contradictions.length;
 
-  if ((hasEmail || hasPhone) && hasBudget && hasTimeline && noteLength >= 30 && signals.strongSignalCount >= 3) {
-    return { points: 10, reason: "Record has verified contact details plus enough structure to score with high confidence." };
+  if (
+    contradictionPenalty === 0 &&
+    (hasEmail || hasPhone) &&
+    hasBudget &&
+    hasTimeline &&
+    notesLength >= 30 &&
+    (hasTier(confidenceSignals, "strong") || signals.strongSignalCount >= 3)
+  ) {
+    return {
+      points: 10,
+      reason: "The record is complete, internally consistent, and well-supported by notes and structured fields.",
+    };
   }
 
-  if (signals.strongSignalCount >= 3 || (hasBudget && hasTimeline && noteLength >= 20)) {
-    return { points: 7, reason: "Multiple strong signals support this score." };
+  if (
+    contradictionPenalty <= 1 &&
+    (hasTier(confidenceSignals, "medium") || signals.strongSignalCount >= 2 || completenessCount >= 4)
+  ) {
+    return {
+      points: 7,
+      reason: contradictionPenalty === 1
+        ? "The record has useful detail, but one contradiction reduces confidence."
+        : "Multiple useful signals make this record reliable enough for confident prioritization.",
+    };
   }
 
-  if (fieldCount >= 4) {
-    return { points: 5, reason: "Moderate data coverage supports a reasonable score." };
+  if (contradictionPenalty <= 1 && completenessCount >= 3) {
+    return {
+      points: 5,
+      reason: "The record is usable, but there are still enough gaps that confidence stays moderate.",
+    };
   }
 
-  if (fieldCount >= 2) {
-    return { points: 2, reason: "Only sparse information is available." };
+  if (completenessCount >= 2) {
+    return {
+      points: 2,
+      reason: contradictionPenalty > 0
+        ? "Sparse or conflicting details make this score tentative."
+        : "Only a small amount of information is available.",
+    };
   }
 
-  return { points: 0, reason: "Data is too minimal to score with confidence." };
+  return {
+    points: 0,
+    reason: "The record is too incomplete or contradictory to score with confidence.",
+  };
 }
 
-export function scoreLead(lead: ScoreableLead): ScoreLeadResult {
+export function scoreLead(lead: ScoreableLead & { createdAt?: string | null }): ScoreLeadResult {
+  const extractedSignals = extractLeadSignals(lead);
   const financialReadiness = scoreFinancial(lead);
   const urgency = scoreUrgency(lead);
   const behavioralIntent = scoreIntent(lead);
@@ -414,7 +616,7 @@ export function scoreLead(lead: ScoreableLead): ScoreLeadResult {
     dataConfidence: dataConfidence.points,
   };
 
-  const score = clamp(
+  const finalScore = clamp(
     breakdown.financialReadiness +
       breakdown.urgency +
       breakdown.behavioralIntent +
@@ -424,16 +626,24 @@ export function scoreLead(lead: ScoreableLead): ScoreLeadResult {
     100,
   );
 
+  const label = getScoreBand(finalScore).label;
+
   return {
-    score,
+    extractedSignals,
+    categoryScores: { ...breakdown },
+    confidenceScore: breakdown.dataConfidence,
+    finalScore,
+    label,
+    score: finalScore,
     breakdown,
-    explanation: [
-      `Financial readiness: ${financialReadiness.points}/30. ${financialReadiness.reason}`,
-      `Urgency: ${urgency.points}/25. ${urgency.reason}`,
-      `Behavioral intent: ${behavioralIntent.points}/20. ${behavioralIntent.reason}`,
-      `Fit readiness: ${fitReadiness.points}/15. ${fitReadiness.reason}`,
-      `Data confidence: ${dataConfidence.points}/10. ${dataConfidence.reason}`,
-    ],
+    explanation: buildExplanation({
+      financialReadiness,
+      urgency,
+      behavioralIntent,
+      fitReadiness,
+      dataConfidence,
+      contradictions: extractedSignals.contradictions,
+    }),
     confidence: getConfidenceLabel(breakdown.dataConfidence),
   };
 }
@@ -456,7 +666,7 @@ export function resolveLeadScoring(lead: Lead): Lead {
 export function buildScoredLeadPayload(
   lead: ScoreableLead & { status?: string | null; is_favorite?: boolean },
 ) {
-  const computed = scoreLead(lead as ScoreableLead);
+  const computed = scoreLead(lead);
 
   return {
     ...lead,
@@ -495,34 +705,458 @@ export function getConfidenceLabel(dataConfidenceScore: number | null | undefine
 
 export function getScoreBand(score: number | null | undefined) {
   const safeScore = score ?? 0;
-  return SCORE_INTERPRETATION.find((band) => safeScore >= band.minScore) ?? SCORE_INTERPRETATION[SCORE_INTERPRETATION.length - 1];
+  return (
+    SCORE_INTERPRETATION.find((band) => safeScore >= band.minScore) ??
+    SCORE_INTERPRETATION[SCORE_INTERPRETATION.length - 1]
+  );
 }
 
-function hasClearBudget(budget: string | null | undefined) {
-  if (!budget) {
-    return false;
+function extractLeadSignals(
+  lead: Pick<ScoreableLead, "notes" | "timeline" | "budget" | "name" | "email" | "phone">,
+): NoteSignals {
+  const notesText = normalizeText(lead.notes);
+  const timelineText = normalizeText(lead.timeline);
+  const budgetText = normalizeText(lead.budget);
+  const combinedText = [notesText, timelineText, budgetText].filter(Boolean).join(" ");
+
+  const matchedSignals: Record<DictionarySectionKey, MatchedDictionarySignal[]> = {
+    financialReadiness: [
+      ...matchDictionarySection("financialReadiness", notesText, "notes"),
+      ...matchDictionarySection("financialReadiness", budgetText, "budget"),
+    ],
+    urgencyTimeline: [
+      ...matchDictionarySection("urgencyTimeline", timelineText, "timeline"),
+      ...matchDictionarySection("urgencyTimeline", notesText, "notes"),
+    ],
+    behavioralIntent: matchDictionarySection("behavioralIntent", notesText, "notes"),
+    fitReadiness: matchDictionarySection("fitReadiness", notesText, "notes"),
+    dataConfidence: matchDictionarySection("dataConfidence", combinedText, "notes"),
+  };
+
+  const ambiguousPhrases = dictionary.ambiguousOrEdgeCasePhrases.phrases.filter((phrase) =>
+    notesText.includes(normalizeText(phrase)),
+  );
+
+  const contradictions = collectContradictions({
+    combinedText,
+    matchedSignals,
+    timelineText,
+    budgetText,
+  });
+
+  const budget = extractBudgetSignal(budgetText, matchedSignals.financialReadiness);
+  const timeline = extractTimelineSignal(
+    timelineText,
+    notesText,
+    matchedSignals.urgencyTimeline,
+  );
+  const fitSignals = matchedSignals.fitReadiness;
+  const matchedTerms = flattenMatchedTerms(matchedSignals);
+
+  return {
+    matchedTerms,
+    matchedSignals,
+    contradictions,
+    ambiguousPhrases,
+    financialSignal: deriveFinancialSignal(matchedSignals.financialReadiness),
+    urgencySignal: deriveUrgencySignal(timeline, matchedSignals.urgencyTimeline),
+    intentSignal: deriveIntentSignal(matchedSignals.behavioralIntent),
+    hasLocation: hasLocationSignal(fitSignals, notesText),
+    propertyType: extractPropertyType(fitSignals),
+    hasConstraints: hasConstraintSignal(fitSignals, notesText),
+    vagueLanguage: hasVagueFitSignal(fitSignals),
+    strongSignalCount: countStrongSignals(matchedSignals),
+    budget,
+    timeline,
+  };
+}
+
+function matchDictionarySection(
+  sectionKey: DictionarySectionKey,
+  text: string,
+  source: "notes" | "timeline" | "budget",
+): MatchedDictionarySignal[] {
+  if (!text) {
+    return [];
   }
 
-  const normalized = normalizeText(budget);
-  return /\$?\d[\d,]*/.test(normalized) || /\b\d+\s*[-–]\s*\d+\b/.test(normalized);
+  const section = dictionary[sectionKey];
+  const matches: MatchedDictionarySignal[] = [];
+
+  for (const tier of DICTIONARY_TIERS) {
+    const bucket = section[tier];
+    if (!bucket) {
+      continue;
+    }
+
+    const matched = matchBucket(text, bucket);
+    if (matched.length === 0) {
+      continue;
+    }
+
+    matches.push({
+      section: sectionKey,
+      tier,
+      source,
+      weight: bucket.weight ?? 0,
+      note: bucket.notes,
+      matched,
+    });
+  }
+
+  return matches;
 }
 
-function isVagueBudget(value: string) {
-  return ["around", "roughly", "flexible", "open", "tbd", "not sure"].some((keyword) => value.includes(keyword));
+function matchBucket(text: string, bucket: DictionaryBucket): DictionaryMatch[] {
+  const matches: DictionaryMatch[] = [];
+
+  for (const keyword of bucket.keywords ?? []) {
+    if (text.includes(normalizeText(keyword))) {
+      matches.push({ sourceType: "keyword", value: keyword });
+    }
+  }
+
+  for (const phrase of bucket.phrases ?? []) {
+    if (text.includes(normalizeText(phrase))) {
+      matches.push({ sourceType: "phrase", value: phrase });
+    }
+  }
+
+  for (const regex of bucket.regexPatterns ?? []) {
+    if (regex.test(text)) {
+      matches.push({ sourceType: "regex", value: regex.source });
+    }
+  }
+
+  return dedupeMatches(matches);
+}
+
+function deriveFinancialSignal(signals: MatchedDictionarySignal[]): NoteSignals["financialSignal"] {
+  const strongSignals = signals.filter((signal) => signal.tier === "strong");
+
+  if (strongSignals.some((signal) => signalHasAnyHint(signal, VERIFIED_FINANCIAL_HINTS))) {
+    return "verified_funds";
+  }
+
+  if (
+    strongSignals.some((signal) => signalHasAnyHint(signal, STRONG_FINANCIAL_HINTS)) ||
+    hasTier(signals, "medium") ||
+    hasTier(signals, "sellerSignals")
+  ) {
+    return "strong_signal";
+  }
+
+  return null;
+}
+
+function deriveUrgencySignal(
+  timeline: StructuredTimelineSignal,
+  signals: MatchedDictionarySignal[],
+): NoteSignals["urgencySignal"] {
+  const primary = timeline.primarySignal;
+
+  if (primary?.tier === "strong") {
+    return "immediate";
+  }
+
+  if (primary?.tier === "medium") {
+    if (signalHasAnyHint(primary, ["2", "3", "30", "45", "60", "90", "within 3 months", "next 2 to 3 months"])) {
+      return "under_3_months";
+    }
+
+    return "three_to_six_months";
+  }
+
+  if (primary?.tier === "weak") {
+    return "six_to_twelve_months";
+  }
+
+  if (hasTier(signals, "negative")) {
+    return "browsing";
+  }
+
+  return null;
+}
+
+function deriveIntentSignal(signals: MatchedDictionarySignal[]): NoteSignals["intentSignal"] {
+  const strong = signals.find((signal) => signal.tier === "strong");
+
+  if (strong && signalHasAnyHint(strong, SHOWING_INTENT_HINTS)) {
+    return "requested_showing";
+  }
+
+  if (strong && signalHasAnyHint(strong, PROPERTY_QUESTION_HINTS)) {
+    return "property_questions";
+  }
+
+  if ((strong && signalHasAnyHint(strong, ENGAGEMENT_HINTS)) || hasTier(signals, "medium")) {
+    return "engaged";
+  }
+
+  if (hasTier(signals, "weak")) {
+    return "general_inquiry";
+  }
+
+  if (hasTier(signals, "negative")) {
+    return "browsing";
+  }
+
+  return null;
+}
+
+function extractBudgetSignal(
+  budgetText: string,
+  financialSignals: MatchedDictionarySignal[],
+): StructuredBudgetSignal {
+  const hasBudget = budgetText.length > 0;
+  const budgetPatterns = dictionary.globalRegexLibrary.budgetPatterns;
+  const isSpecific = budgetPatterns.some((pattern) => pattern.test(budgetText));
+  const isVague = hasBudget && !isSpecific;
+  const reinforcedByNotes =
+    hasTier(financialSignals, "medium") ||
+    hasTier(financialSignals, "strong") ||
+    financialSignals.some((signal) =>
+      signal.matched.some((match) =>
+        dictionary.globalRegexLibrary.budgetPatterns.some((pattern) => pattern.test(normalizeText(match.value))),
+      ),
+    );
+
+  return {
+    hasBudget,
+    isSpecific,
+    isVague,
+    reinforcedByNotes,
+  };
+}
+
+function extractTimelineSignal(
+  timelineText: string,
+  notesText: string,
+  signals: MatchedDictionarySignal[],
+): StructuredTimelineSignal {
+  const timelineSignal = selectPrimaryTier(signals.filter((signal) => signal.source === "timeline"));
+  const notesSignal = selectPrimaryTier(signals.filter((signal) => signal.source === "notes"));
+
+  if (timelineSignal && notesSignal && timelineSignal.tier !== notesSignal.tier) {
+    return {
+      source: "timeline",
+      primaryTier: timelineSignal.tier,
+      primarySignal: timelineSignal,
+      contradiction: true,
+    };
+  }
+
+  if (timelineSignal) {
+    return {
+      source: "timeline",
+      primaryTier: timelineSignal.tier,
+      primarySignal: timelineSignal,
+      contradiction: false,
+    };
+  }
+
+  if (notesSignal) {
+    return {
+      source: "notes",
+      primaryTier: notesSignal.tier,
+      primarySignal: notesSignal,
+      contradiction: false,
+    };
+  }
+
+  if (
+    dictionary.globalRegexLibrary.timelinePatterns.some((pattern) => pattern.test(timelineText || notesText))
+  ) {
+    return {
+      source: "combined",
+      primaryTier: "medium",
+      primarySignal: null,
+      contradiction: false,
+    };
+  }
+
+  return {
+    source: "combined",
+    primaryTier: null,
+    primarySignal: null,
+    contradiction: false,
+  };
+}
+
+function collectContradictions(input: {
+  combinedText: string;
+  matchedSignals: Record<DictionarySectionKey, MatchedDictionarySignal[]>;
+  timelineText: string;
+  budgetText: string;
+}) {
+  const contradictions = new Set<string>();
+
+  for (const sectionKey of DICTIONARY_SECTIONS) {
+    const signals = input.matchedSignals[sectionKey];
+    if (hasPositiveSignal(signals) && hasTier(signals, "negative")) {
+      contradictions.add(`${sectionLabel(sectionKey)} has both positive and negative signals.`);
+    }
+
+    for (const conflict of dictionary[sectionKey].conflictSignals ?? []) {
+      const parts = conflict.split("+").map((part) => normalizeText(part));
+      if (parts.every((part) => input.combinedText.includes(part))) {
+        contradictions.add(`${sectionLabel(sectionKey)} conflict: ${conflict}.`);
+      }
+    }
+  }
+
+  if (
+    input.timelineText &&
+    hasTier(input.matchedSignals.urgencyTimeline.filter((signal) => signal.source === "timeline"), "strong") &&
+    hasTier(input.matchedSignals.urgencyTimeline.filter((signal) => signal.source === "notes"), "negative")
+  ) {
+    contradictions.add("Timeline field suggests urgency, but notes suggest the lead is delayed or just browsing.");
+  }
+
+  if (
+    input.budgetText &&
+    dictionary.globalRegexLibrary.budgetPatterns.some((pattern) => pattern.test(input.budgetText)) &&
+    hasTier(input.matchedSignals.financialReadiness, "negative")
+  ) {
+    contradictions.add("Budget is present, but financial notes suggest qualification or affordability problems.");
+  }
+
+  return Array.from(contradictions);
+}
+
+function hasLocationSignal(signals: MatchedDictionarySignal[], notesText: string) {
+  return (
+    signals.some((signal) => signalHasAnyHint(signal, LOCATION_HINTS)) ||
+    dictionary.globalRegexLibrary.locationPatterns.some((pattern) => pattern.test(notesText))
+  );
+}
+
+function extractPropertyType(signals: MatchedDictionarySignal[]) {
+  for (const signal of signals) {
+    for (const hint of PROPERTY_TYPE_HINTS) {
+      if (signalHasAnyHint(signal, [hint])) {
+        return hint;
+      }
+    }
+  }
+
+  return null;
+}
+
+function hasConstraintSignal(signals: MatchedDictionarySignal[], notesText: string) {
+  return (
+    signals.some((signal) => signalHasAnyHint(signal, CONSTRAINT_HINTS)) ||
+    dictionary.globalRegexLibrary.bedBathPatterns.some((pattern) => pattern.test(notesText))
+  );
+}
+
+function hasVagueFitSignal(signals: MatchedDictionarySignal[]) {
+  return signals.some((signal) => signal.tier === "weak" || signal.tier === "negative");
+}
+
+function countStrongSignals(signals: Record<DictionarySectionKey, MatchedDictionarySignal[]>) {
+  return Object.values(signals)
+    .flat()
+    .filter((signal) => signal.tier === "strong" || signal.tier === "sellerSignals").length;
+}
+
+function flattenMatchedTerms(signals: Record<DictionarySectionKey, MatchedDictionarySignal[]>) {
+  return Array.from(
+    new Set(
+      Object.values(signals)
+        .flat()
+        .flatMap((signal) => signal.matched.map((match) => match.value)),
+    ),
+  );
+}
+
+function selectPrimaryTier(signals: MatchedDictionarySignal[]) {
+  const priority: DictionaryTierName[] = ["negative", "strong", "medium", "weak", "sellerSignals"];
+
+  for (const tier of priority) {
+    const signal = signals.find((candidate) => candidate.tier === tier);
+    if (signal) {
+      return signal;
+    }
+  }
+
+  return null;
+}
+
+function hasPositiveSignal(signals: MatchedDictionarySignal[]) {
+  return signals.some((signal) =>
+    signal.tier === "strong" ||
+    signal.tier === "medium" ||
+    signal.tier === "weak" ||
+    signal.tier === "sellerSignals",
+  );
+}
+
+function hasTier(signals: MatchedDictionarySignal[], tier: DictionaryTierName) {
+  return signals.some((signal) => signal.tier === tier);
+}
+
+function signalHasAnyHint(signal: MatchedDictionarySignal, hints: string[]) {
+  const normalizedHints = hints.map((hint) => normalizeText(hint));
+
+  return signal.matched.some((match) => {
+    const value = normalizeText(match.value);
+    return normalizedHints.some((hint) => value.includes(hint));
+  });
+}
+
+function buildExplanation(input: {
+  financialReadiness: CategoryScore;
+  urgency: CategoryScore;
+  behavioralIntent: CategoryScore;
+  fitReadiness: CategoryScore;
+  dataConfidence: CategoryScore;
+  contradictions: string[];
+}) {
+  const explanation = [
+    `Financial readiness: ${input.financialReadiness.points}/30. ${input.financialReadiness.reason}`,
+    `Urgency: ${input.urgency.points}/25. ${input.urgency.reason}`,
+    `Behavioral intent: ${input.behavioralIntent.points}/20. ${input.behavioralIntent.reason}`,
+    `Fit readiness: ${input.fitReadiness.points}/15. ${input.fitReadiness.reason}`,
+    `Data confidence: ${input.dataConfidence.points}/10. ${input.dataConfidence.reason}`,
+  ];
+
+  if (input.contradictions.length > 0) {
+    explanation.push(`Contradictions: ${input.contradictions.join(" ")}`);
+  }
+
+  return explanation;
+}
+
+function dedupeMatches(matches: DictionaryMatch[]) {
+  const seen = new Set<string>();
+  return matches.filter((match) => {
+    const key = `${match.sourceType}:${match.value}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function sectionLabel(sectionKey: DictionarySectionKey) {
+  switch (sectionKey) {
+    case "financialReadiness":
+      return "Financial readiness";
+    case "urgencyTimeline":
+      return "Urgency";
+    case "behavioralIntent":
+      return "Behavioral intent";
+    case "fitReadiness":
+      return "Fit readiness";
+    case "dataConfidence":
+      return "Data confidence";
+  }
 }
 
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function matchesAny(value: string, keywords: string[], collector?: Set<string>) {
-  return keywords.some((keyword) => {
-    const hit = value.includes(keyword);
-    if (hit && collector) {
-      collector.add(keyword);
-    }
-    return hit;
-  });
 }
 
 function clamp(value: number, min: number, max: number) {
