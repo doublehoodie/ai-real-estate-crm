@@ -51,7 +51,8 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
 
     await router.refresh();
     setFavoriteOverrides((prev) => {
-      const { [lead.id]: _, ...rest } = prev;
+      const rest = { ...prev };
+      delete rest[lead.id];
       return rest;
     });
   }

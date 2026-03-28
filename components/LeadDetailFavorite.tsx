@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { LeadFavoriteStar } from "@/components/LeadFavoriteStar";
@@ -13,10 +13,6 @@ type LeadDetailFavoriteProps = {
 export function LeadDetailFavorite({ leadId, initialFavorite }: LeadDetailFavoriteProps) {
   const router = useRouter();
   const [favorite, setFavorite] = useState(initialFavorite);
-
-  useEffect(() => {
-    setFavorite(initialFavorite);
-  }, [leadId, initialFavorite]);
 
   async function handleToggle(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
