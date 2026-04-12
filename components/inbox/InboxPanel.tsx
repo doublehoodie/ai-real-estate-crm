@@ -53,10 +53,10 @@ export function InboxPanel() {
 
     async function checkSession() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!cancelled) {
-        setLoggedIn(Boolean(user));
+        setLoggedIn(Boolean(session?.user));
         setSessionReady(true);
       }
     }

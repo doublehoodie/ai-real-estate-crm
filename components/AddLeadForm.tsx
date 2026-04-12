@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabaseClient";
 import { deriveBudgetFields } from "@/lib/budget";
 import { normalizePhoneForStorage } from "@/lib/phone";
 import {
@@ -58,12 +58,16 @@ export function AddLeadForm() {
 
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user?.id) {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) {
+        console.error("No user session found");
         setError("You must be logged in to add a lead.");
         return;
       }
+
+      console.log("USER ID:", user.id);
 
       const newId = crypto.randomUUID();
       const { budget, budget_value } = deriveBudgetFields(form.budget || null);

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabaseClient";
 import { deriveBudgetFields } from "@/lib/budget";
 import { coercePhoneFromApi, normalizePhoneForStorage } from "@/lib/phone";
 import {

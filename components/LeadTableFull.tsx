@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabaseClient";
 import type { Lead } from "@/types/lead";
 import { displayBudgetText } from "@/lib/format";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";

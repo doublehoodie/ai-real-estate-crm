@@ -16,14 +16,25 @@ type LeadDetailPageProps = {
   }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.id) {
+    notFound();
+  }
 
   const { data, error } = await supabase
     .from("leads")
     .select("*")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (error || !data) {

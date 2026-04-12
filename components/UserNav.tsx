@@ -15,10 +15,10 @@ export function UserNav() {
 
     async function load() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!cancelled) {
-        setEmail(user?.email ?? null);
+        setEmail(session?.user?.email ?? null);
         setLoading(false);
       }
     }
