@@ -1,4 +1,5 @@
 import leadDictionary from "@/scoring/leadDictionary.js";
+import { coercePhoneFromApi } from "@/lib/phone";
 import type { Lead, LeadScoreBreakdown, LeadScoreConfidence } from "@/types/lead";
 
 type ScoringCategoryKey =
@@ -345,6 +346,7 @@ type ScoreableLead = Partial<
     | "email"
     | "phone"
     | "budget"
+    | "budget_value"
     | "timeline"
     | "notes"
     | "score"
@@ -545,7 +547,7 @@ export function scoreConfidence(lead: ScoreableLead): CategoryScore {
   const confidenceSignals = signals.matchedSignals.dataConfidence;
   const hasName = Boolean(lead.name?.trim());
   const hasEmail = Boolean(lead.email?.trim());
-  const hasPhone = Boolean(lead.phone?.trim());
+  const hasPhone = Boolean(String(lead.phone ?? "").trim());
   const hasBudget = Boolean(lead.budget?.trim());
   const hasTimeline = Boolean(lead.timeline?.trim());
   const notesLength = lead.notes?.trim().length ?? 0;
@@ -649,14 +651,19 @@ export function scoreLead(lead: ScoreableLead & { createdAt?: string | null }): 
 }
 
 export function resolveLeadScoring(lead: Lead): Lead {
-  if (lead.score !== null && lead.score_breakdown && lead.score_explanation) {
-    return lead;
+  const base: Lead = {
+    ...lead,
+    phone: coercePhoneFromApi(lead.phone),
+  };
+
+  if (base.score !== null && base.score_breakdown && base.score_explanation) {
+    return base;
   }
 
-  const computed = scoreLead(lead);
+  const computed = scoreLead(base);
 
   return {
-    ...lead,
+    ...base,
     score: computed.score,
     score_breakdown: computed.breakdown,
     score_explanation: computed.explanation,

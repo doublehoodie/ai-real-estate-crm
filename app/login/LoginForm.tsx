@@ -1,0 +1,115 @@
+"use client";
+
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+
+export function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/";
+  const errorParam = searchParams.get("error");
+
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function sendMagicLink(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("sending");
+    setMessage(null);
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo,
+      },
+    });
+
+    if (error) {
+      console.error(error);
+      setStatus("error");
+      setMessage(error.message);
+      return;
+    }
+
+    setStatus("sent");
+    setMessage("Check your email");
+  }
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        background: "var(--background, #f3f5f8)",
+        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          background: "white",
+          borderRadius: "12px",
+          padding: "28px",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+        }}
+      >
+        <h1 style={{ margin: "0 0 8px", fontSize: "22px", color: "#111827" }}>Sign in</h1>
+        <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#6b7280" }}>
+          We’ll email you a magic link — no password.
+        </p>
+
+        {errorParam && (
+          <p style={{ color: "#b91c1c", fontSize: "13px", marginBottom: "12px" }}>{errorParam}</p>
+        )}
+
+        <form onSubmit={sendMagicLink} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "#374151" }}>
+            Email
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              style={{
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                fontSize: "15px",
+              }}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={status === "sending" || status === "sent"}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "999px",
+              border: "none",
+              background: status === "sent" ? "#9ca3af" : "#111827",
+              color: "white",
+              fontWeight: 600,
+              cursor: status === "sent" ? "default" : "pointer",
+            }}
+          >
+            {status === "sending" ? "Sending…" : "Send Magic Link"}
+          </button>
+        </form>
+
+        {message && (
+          <p style={{ marginTop: "16px", color: status === "error" ? "#b91c1c" : "#059669", fontSize: "14px" }}>
+            {message}
+          </p>
+        )}
+      </div>
+    </main>
+  );
+}

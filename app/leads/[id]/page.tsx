@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Lead } from "@/types/lead";
 import { Sidebar } from "@/components/Sidebar";
-import { formatBudget } from "@/lib/format";
+import { displayBudgetText, formatBudgetValueUsd } from "@/lib/format";
 import { resolveLeadScoring } from "@/lib/scoring";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";
 import { LeadScoreDetails } from "@/components/LeadScoreDetails";
@@ -18,6 +18,7 @@ type LeadDetailPageProps = {
 
 export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   const { id } = await params;
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from("leads")
@@ -31,6 +32,12 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   }
 
   const lead = resolveLeadScoring(data as Lead);
+
+  const { data: inboxNotes } = await supabase
+    .from("notes")
+    .select("id, thread_id, content, created_at")
+    .eq("lead_id", id)
+    .order("created_at", { ascending: false });
 
   return (
     <main
@@ -112,7 +119,27 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
               Buying profile
             </h2>
 
-            <DetailRow label="Budget" value={formatBudget(lead.budget)} />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                padding: "8px 0",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
+              <span style={{ fontSize: "13px", color: "#6b7280" }}>Budget</span>
+              <div style={{ textAlign: "right", maxWidth: "65%" }}>
+                <span style={{ fontSize: "14px", color: "#111", fontWeight: 500, whiteSpace: "pre-wrap" }}>
+                  {displayBudgetText(lead.budget)}
+                </span>
+                {lead.budget_value != null && (
+                  <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
+                    Parsed estimate: {formatBudgetValueUsd(lead.budget_value)}
+                  </div>
+                )}
+              </div>
+            </div>
             <DetailRow label="Timeline" value={lead.timeline} />
             <DetailRow label="Status" value={lead.status} />
             <DetailRow
@@ -139,18 +166,12 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
           }}
         >
           <h2 style={{ marginTop: 0, marginBottom: "12px", fontSize: "16px", color: "#111" }}>
-            Notes
+            Scoring breakdown
           </h2>
-          <p
-            style={{
-              margin: 0,
-              whiteSpace: "pre-wrap",
-              color: lead.notes ? "#111827" : "#6b7280",
-              lineHeight: 1.6,
-            }}
-          >
-            {lead.notes || "No notes captured yet for this lead."}
-          </p>
+          <LeadScoreDetails
+            breakdown={lead.score_breakdown}
+            explanation={lead.score_explanation}
+          />
         </div>
 
         <div
@@ -163,12 +184,25 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
           }}
         >
           <h2 style={{ marginTop: 0, marginBottom: "12px", fontSize: "16px", color: "#111" }}>
-            Scoring breakdown
+            Inbox &amp; activity notes
           </h2>
-          <LeadScoreDetails
-            breakdown={lead.score_breakdown}
-            explanation={lead.score_explanation}
-          />
+          {inboxNotes && inboxNotes.length > 0 ? (
+            <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "14px", lineHeight: 1.5 }}>
+              {inboxNotes.map((n) => (
+                <li key={n.id} style={{ marginBottom: "10px" }}>
+                  <span style={{ color: "#6b7280", fontSize: "12px" }}>
+                    {n.thread_id ? `Thread ${n.thread_id.slice(0, 8)}… · ` : "Profile · "}
+                    {new Date(n.created_at).toLocaleString()}
+                  </span>
+                  <div style={{ whiteSpace: "pre-wrap", marginTop: "4px" }}>{n.content}</div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+              No inbox notes yet. Add notes from the Inbox or edit profile notes below.
+            </p>
+          )}
         </div>
 
         <div style={{ marginTop: "20px" }}>

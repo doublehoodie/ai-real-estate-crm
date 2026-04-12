@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/Sidebar";
+import { InboxPanel } from "@/components/InboxPanel";
 
 export default function InboxPage() {
   return (
@@ -18,19 +19,7 @@ export default function InboxPage() {
           This inbox will aggregate emails, texts, and calls for your leads.
         </p>
 
-        <div
-          style={{
-            background: "white",
-            borderRadius: "12px",
-            padding: "20px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          }}
-        >
-          <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
-            Messaging integration is not connected yet. In a later phase, this
-            view will show conversations and AI summaries for each lead.
-          </p>
-        </div>
+        <InboxPanel />
       </section>
     </main>
   );

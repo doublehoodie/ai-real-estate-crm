@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { deriveBudgetFields } from "@/lib/budget";
+import { coercePhoneFromApi, normalizePhoneForStorage } from "@/lib/phone";
 import {
   buildScoredLeadPayload,
   isMissingColumnError,
@@ -30,7 +32,7 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
   const [form, setForm] = useState<FormState>({
     name: lead.name ?? "",
     email: lead.email ?? "",
-    phone: lead.phone ?? "",
+    phone: coercePhoneFromApi(lead.phone) ?? "",
     budget: lead.budget ?? "",
     timeline: lead.timeline ?? "",
     status: lead.status ?? "New",
@@ -54,19 +56,22 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
     setError(null);
 
     try {
+      const { budget, budget_value } = deriveBudgetFields(form.budget || null);
       const payload = buildScoredLeadPayload({
         name: form.name || null,
         email: form.email || null,
-        phone: form.phone || null,
-        budget: form.budget || null,
+        phone: normalizePhoneForStorage(form.phone),
+        budget,
         timeline: form.timeline || null,
         status: form.status || null,
         notes: form.notes || null,
       });
 
+      const fullUpdate = { ...payload, budget_value };
+
       const { error: updateError } = await supabase
         .from("leads")
-        .update(payload)
+        .update(fullUpdate)
         .eq("id", lead.id);
 
       if (updateError) {
@@ -75,13 +80,22 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
           isMissingColumnError(message, "score_breakdown") ||
           isMissingColumnError(message, "score_explanation") ||
           isMissingColumnError(message, "updated_at");
+        const budgetValueColumnMissing = isMissingColumnError(message, "budget_value");
 
-        if (!scoringColumnMissing) {
+        if (!scoringColumnMissing && !budgetValueColumnMissing) {
           setError(updateError.message || "Failed to update lead.");
           return;
         }
 
-        const fallbackPayload = stripScoringPersistenceFields(payload);
+        let fallbackPayload: Record<string, unknown> = scoringColumnMissing
+          ? { ...stripScoringPersistenceFields(payload), budget_value }
+          : { ...fullUpdate };
+
+        if (budgetValueColumnMissing) {
+          const { budget_value: _drop, ...rest } = fallbackPayload;
+          fallbackPayload = rest;
+        }
+
         const { error: fallbackError } = await supabase
           .from("leads")
           .update(fallbackPayload)
@@ -91,6 +105,20 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
           setError(fallbackError.message || "Failed to update lead.");
           return;
         }
+      }
+
+      try {
+        const mirror = await fetch("/api/inbox/lead-profile-note", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId: lead.id, note: form.notes }),
+        });
+        if (!mirror.ok) {
+          console.error("[EditLeadForm] lead-profile-note mirror:", await mirror.text());
+        }
+      } catch (e) {
+        console.error("[EditLeadForm] lead-profile-note mirror:", e);
       }
 
       router.refresh();

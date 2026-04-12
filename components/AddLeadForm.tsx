@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { deriveBudgetFields } from "@/lib/budget";
+import { normalizePhoneForStorage } from "@/lib/phone";
 import {
   buildScoredLeadPayload,
   isMissingColumnError,
@@ -55,11 +57,21 @@ export function AddLeadForm() {
     setSubmitting(true);
 
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.id) {
+        setError("You must be logged in to add a lead.");
+        return;
+      }
+
+      const newId = crypto.randomUUID();
+      const { budget, budget_value } = deriveBudgetFields(form.budget || null);
       const baseRow = buildScoredLeadPayload({
         name: form.name || null,
         email: form.email || null,
-        phone: form.phone || null,
-        budget: form.budget || null,
+        phone: normalizePhoneForStorage(form.phone),
+        budget,
         timeline: form.timeline || null,
         status: form.status || null,
         notes: form.notes || null,
@@ -67,7 +79,7 @@ export function AddLeadForm() {
       });
 
       const { error: insertError } = await supabase.from("leads").insert([
-        baseRow,
+        { ...baseRow, id: newId, budget_value, user_id: user.id },
       ]);
 
       if (insertError) {
@@ -76,17 +88,26 @@ export function AddLeadForm() {
           isMissingColumnError(message, "score_breakdown") ||
           isMissingColumnError(message, "score_explanation") ||
           isMissingColumnError(message, "updated_at");
+        const budgetValueColumnMissing = isMissingColumnError(message, "budget_value");
 
-        if (!scoringColumnMissing) {
+        if (!scoringColumnMissing && !budgetValueColumnMissing) {
           console.error(insertError);
           setError(insertError.message || "Failed to save lead. Please try again.");
           return;
         }
 
-        const fallbackRow = stripScoringPersistenceFields(baseRow);
-        const { error: fallbackError } = await supabase.from("leads").insert([
-          fallbackRow,
-        ]);
+        let fallbackRow: Record<string, unknown>;
+        if (scoringColumnMissing) {
+          fallbackRow = { ...stripScoringPersistenceFields(baseRow), id: newId, budget_value, user_id: user.id };
+        } else {
+          fallbackRow = { ...baseRow, id: newId, budget_value, user_id: user.id };
+        }
+        if (budgetValueColumnMissing) {
+          const { budget_value: _drop, ...rest } = fallbackRow;
+          fallbackRow = rest;
+        }
+
+        const { error: fallbackError } = await supabase.from("leads").insert([fallbackRow]);
 
         if (fallbackError) {
           console.error(fallbackError);

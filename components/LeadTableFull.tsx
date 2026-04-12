@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { Lead } from "@/types/lead";
-import { formatBudget } from "@/lib/format";
+import { displayBudgetText } from "@/lib/format";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";
 import { LeadScoreDetails } from "@/components/LeadScoreDetails";
 import { LeadFavoriteStar } from "@/components/LeadFavoriteStar";
@@ -269,7 +269,7 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
               <td style={cellStyle}>{lead.name ?? "—"}</td>
               <td style={cellStyle}>{lead.email ?? "—"}</td>
               <td style={cellStyle}>{lead.phone ?? "—"}</td>
-              <td style={cellStyle}>{formatBudget(lead.budget)}</td>
+              <td style={cellStyle}>{displayBudgetText(lead.budget)}</td>
               <td style={cellStyle}>{lead.timeline ?? "—"}</td>
               <td style={cellStyle}>
                 <LeadScoreBadge

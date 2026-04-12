@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { UserNav } from "@/components/UserNav";
 
 export const metadata: Metadata = {
   title: "AI Real Estate CRM",
@@ -13,7 +14,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            padding: "12px 20px",
+            borderBottom: "1px solid #e5e7eb",
+            background: "var(--surface, #fff)",
+          }}
+        >
+          <UserNav />
+        </header>
+        {children}
+      </body>
     </html>
   );
 }

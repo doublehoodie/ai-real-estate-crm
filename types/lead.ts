@@ -10,10 +10,15 @@ export type LeadScoreBreakdown = {
 
 export interface Lead {
   id: string;
+  /** Owning CRM user (auth.users.id); required on insert. */
+  user_id?: string | null;
   name: string | null;
   email: string | null;
+  /** Free-form or E.164-style; always string | null from DB/API (never a number). */
   phone: string | null;
   budget: string | null;
+  /** Derived from `budget` when parsing is unambiguous; null otherwise. */
+  budget_value?: number | null;
   timeline: string | null;
   score: number | null;
   score_breakdown: LeadScoreBreakdown | null;

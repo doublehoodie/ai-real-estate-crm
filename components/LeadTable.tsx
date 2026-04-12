@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Lead } from "@/types/lead";
-import { formatBudget } from "@/lib/format";
+import { displayBudgetText } from "@/lib/format";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";
 import { LeadScoreDetails } from "@/components/LeadScoreDetails";
 
@@ -15,6 +15,7 @@ export function LeadTable({ leads }: LeadTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "Hot" | "Warm" | "Cold">("all");
+  const [openFollowUpFor, setOpenFollowUpFor] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     const allLeads = leads ?? [];
@@ -107,6 +108,7 @@ export function LeadTable({ leads }: LeadTableProps) {
             <th style={headerCellStyle}>Score</th>
             <th style={headerCellStyle}>Breakdown</th>
             <th style={headerCellStyle}>Notes</th>
+            <th style={headerCellStyle}>Follow-up</th>
           </tr>
         </thead>
         <tbody>
@@ -117,7 +119,7 @@ export function LeadTable({ leads }: LeadTableProps) {
               onClick={() => router.push(`/leads/${lead.id}`)}
             >
               <td style={cellStyle}>{lead.name ?? "—"}</td>
-              <td style={cellStyle}>{formatBudget(lead.budget)}</td>
+              <td style={cellStyle}>{displayBudgetText(lead.budget)}</td>
               <td style={cellStyle}>{lead.timeline ?? "—"}</td>
               <td style={cellStyle}>
                 <LeadScoreBadge
@@ -133,12 +135,61 @@ export function LeadTable({ leads }: LeadTableProps) {
                 />
               </td>
               <td style={cellStyle}>{getNotesPreview(lead.notes)}</td>
+              <td style={{ ...cellStyle, position: "relative" }} onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenFollowUpFor((current) => (current === lead.id ? null : lead.id))
+                  }
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "999px",
+                    border: "1px solid #e5e7eb",
+                    background: "white",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Follow-up
+                </button>
+                {openFollowUpFor === lead.id && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "42px",
+                      zIndex: 10,
+                      width: "240px",
+                      background: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "10px",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                      padding: "12px",
+                    }}
+                  >
+                    <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "8px", color: "#111827" }}>
+                      Templates
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "12px" }}>
+                      <li>Quick check-in</li>
+                      <li>Schedule a showing</li>
+                      <li>Pricing follow-up</li>
+                    </ul>
+                    <div style={{ fontSize: "12px", fontWeight: 700, margin: "10px 0 4px", color: "#111827" }}>
+                      AI suggestion
+                    </div>
+                    <p style={{ margin: 0, color: "#6b7280", fontSize: "12px", lineHeight: 1.4 }}>
+                      Suggested next message: Ask for preferred showing time this week and confirm pre-approval status.
+                    </p>
+                  </div>
+                )}
+              </td>
             </tr>
           ))}
 
           {rows.length === 0 && (
             <tr>
-              <td colSpan={6} style={{ ...cellStyle, textAlign: "center", color: "#6b7280", padding: "24px" }}>
+              <td colSpan={7} style={{ ...cellStyle, textAlign: "center", color: "#6b7280", padding: "24px" }}>
                 No leads found. Adjust your filters or add a new lead.
               </td>
             </tr>
