@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
 import { primaryButton } from "@/lib/ui";
 
 export function LoginForm() {
@@ -23,20 +22,21 @@ export function LoginForm() {
     const origin =
       fromEnv ||
       (typeof window !== "undefined" ? window.location.origin : "");
-    const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    console.log("Magic link emailRedirectTo:", emailRedirectTo);
+    console.log("[magic-link] client origin / SITE_URL:", origin);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo,
-      },
+    const res = await fetch("/api/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, next }),
     });
 
-    if (error) {
-      console.error(error);
+    const payload = (await res.json().catch(() => ({}))) as { error?: string };
+
+    if (!res.ok) {
+      console.error("[magic-link] request failed:", payload.error ?? res.statusText);
       setStatus("error");
-      setMessage(error.message);
+      setMessage(payload.error || "Failed to send magic link.");
       return;
     }
 
