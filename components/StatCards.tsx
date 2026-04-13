@@ -12,7 +12,7 @@ export function StatCards({ leads }: StatCardsProps) {
   const averageScore = getAverageScore(allLeads);
 
   return (
-    <div style={{ display: "flex", gap: "16px", marginBottom: "24px", flexWrap: "wrap" }}>
+    <div className="mb-6 flex flex-wrap gap-4">
       <StatCard title="Total Leads" value={String(totalLeads)} />
       <StatCard title="Hot Leads" value={String(hotLeads)} />
       <StatCard title="New Leads" value={String(newLeads)} />
@@ -39,17 +39,9 @@ type StatCardProps = {
 
 function StatCard({ title, value }: StatCardProps) {
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "12px",
-        padding: "18px",
-        minWidth: "180px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-      }}
-    >
-      <div style={{ fontSize: "14px", color: "#333", marginBottom: "8px" }}>{title}</div>
-      <div style={{ fontSize: "28px", fontWeight: 700, color: "#111" }}>{value}</div>
+    <div className="min-w-[180px] rounded-xl border border-gray-200 bg-white p-[18px] shadow-sm">
+      <div className="mb-2 text-sm text-gray-500">{title}</div>
+      <div className="text-[28px] font-bold text-gray-900">{value}</div>
     </div>
   );
 }

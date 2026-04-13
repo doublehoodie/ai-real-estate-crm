@@ -21,7 +21,7 @@ export function LeadScoreDetails({
     <details onClick={(event) => event.stopPropagation()}>
       <summary
         onClick={(event) => event.stopPropagation()}
-        style={{ cursor: "pointer", color: "#0f766e", fontSize: "13px", fontWeight: 600 }}
+        style={{ cursor: "pointer", color: "#1bbff6", fontSize: "13px", fontWeight: 600 }}
       >
         Why this score
       </summary>

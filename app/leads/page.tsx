@@ -20,17 +20,10 @@ export default async function LeadsPage() {
   if (!user?.id) {
     console.log("LEADS DATA (no user):", []);
     return (
-      <main
-        style={{
-          display: "flex",
-          minHeight: "100vh",
-          fontFamily: "Arial, sans-serif",
-          background: "#f7f8fa",
-        }}
-      >
+      <main className="flex min-h-screen bg-[#f3f4f6]">
         <Sidebar active="leads" />
         <section style={{ flex: 1, padding: "32px" }}>
-          <p style={{ color: "#b91c1c" }}>You must be logged in to view leads.</p>
+          <p className="text-red-700">You must be logged in to view leads.</p>
         </section>
       </main>
     );
@@ -51,21 +44,12 @@ export default async function LeadsPage() {
   }
 
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        fontFamily: "Arial, sans-serif",
-        background: "#f7f8fa",
-      }}
-    >
+    <main className="flex min-h-screen bg-[#f3f4f6]">
       <Sidebar active="leads" />
 
       <section style={{ flex: 1, padding: "32px" }}>
-        <h1 style={{ marginBottom: "8px", color: "#111" }}>Leads</h1>
-        <p style={{ color: "#444", marginBottom: "24px" }}>
-          Full lead list ranked by score, across all sources.
-        </p>
+        <h1 className="mb-2 text-gray-900">Leads</h1>
+        <p className="mb-6 text-gray-500">Full lead list ranked by score, across all sources.</p>
 
         <LeadTableFull leads={leads} />
       </section>

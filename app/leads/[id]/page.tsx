@@ -51,14 +51,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     .order("created_at", { ascending: false });
 
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        fontFamily: "Arial, sans-serif",
-        background: "#f7f8fa",
-      }}
-    >
+    <main className="flex min-h-screen bg-[#f3f4f6]">
       <Sidebar active="leads" />
 
       <section style={{ flex: 1, padding: "32px" }}>

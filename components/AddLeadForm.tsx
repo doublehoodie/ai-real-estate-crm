@@ -11,6 +11,7 @@ import {
   scoreLead,
   stripScoringPersistenceFields,
 } from "@/lib/scoring";
+import { primaryButton } from "@/lib/ui";
 
 type FormState = {
   name: string;
@@ -137,40 +138,20 @@ export function AddLeadForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      style={{
-        background: "white",
-        borderRadius: "12px",
-        padding: "20px",
-        marginBottom: "24px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "12px 16px",
-        alignItems: "end",
-      }}
+      className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] items-end gap-x-4 gap-y-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
     >
-      <div style={{ gridColumn: "1 / -1", marginBottom: "4px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
+      <div className="col-span-full mb-1">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 style={{ margin: 0, color: "#111" }}>Add Lead</h2>
-            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+            <h2 className="m-0 text-gray-900">Add Lead</h2>
+            <p className="mt-1 text-[13px] text-gray-500">
               Manually create a new lead. Scoring is calculated automatically from structured fields and notes.
             </p>
           </div>
-          <div
-            style={{
-              borderRadius: "12px",
-              padding: "12px 14px",
-              background: "#f8fafc",
-              border: "1px solid #e5e7eb",
-              minWidth: "180px",
-            }}
-          >
-            <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Score preview</div>
-            <div style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>{scorePreview.score}</div>
-            <div style={{ fontSize: "12px", color: "#6b7280", textTransform: "capitalize" }}>
-              {scorePreview.confidence} confidence
-            </div>
+          <div className="min-w-[180px] rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
+            <div className="mb-1 text-xs text-gray-500">Score preview</div>
+            <div className="text-2xl font-bold text-gray-900">{scorePreview.score}</div>
+            <div className="text-xs capitalize text-gray-500">{scorePreview.confidence} confidence</div>
           </div>
         </div>
       </div>
@@ -261,35 +242,20 @@ export function AddLeadForm() {
           type="checkbox"
           checked={form.is_favorite}
           onChange={(e) => handleChange("is_favorite", e.target.checked)}
-          className="size-4 rounded border-slate-300 text-teal-700 focus:ring-2 focus:ring-teal-500/40"
+          className="size-4 rounded border-slate-300 text-[#1bbff6] focus:ring-2 focus:ring-[#1bbff6]"
         />
         <span>Mark as favorite</span>
       </label>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div className="flex flex-col gap-2">
         <button
           type="submit"
           disabled={submitting}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "999px",
-            border: "none",
-            background: submitting ? "#9ca3af" : "#111827",
-            color: "white",
-            fontSize: "14px",
-            fontWeight: 600,
-            cursor: submitting ? "default" : "pointer",
-            alignSelf: "flex-start",
-            whiteSpace: "nowrap",
-          }}
+          className={`self-start whitespace-nowrap rounded-full border-0 px-4 py-2.5 text-sm font-semibold ${primaryButton}`}
         >
           {submitting ? "Saving..." : "Add Lead"}
         </button>
-        {error && (
-          <span style={{ fontSize: "12px", color: "#b91c1c" }}>
-            {error}
-          </span>
-        )}
+        {error && <span className="text-xs text-red-700">{error}</span>}
       </div>
     </form>
   );

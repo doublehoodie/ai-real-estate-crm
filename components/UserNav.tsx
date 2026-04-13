@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { secondaryButton } from "@/lib/ui";
 
 export function UserNav() {
   const router = useRouter();
@@ -45,35 +46,29 @@ export function UserNav() {
   }
 
   if (loading) {
-    return (
-      <div style={{ fontSize: "13px", color: "#6b7280" }}>…</div>
-    );
+    return <div className="text-sm text-gray-500">…</div>;
   }
 
   if (!email) {
     return (
-      <Link href="/login" style={{ fontSize: "13px", color: "#0f766e", fontWeight: 600 }}>
+      <Link
+        href="/login"
+        className="rounded text-sm font-semibold text-[#1bbff6] transition-colors hover:text-[#1aa8db] focus:outline-none focus:ring-2 focus:ring-[#1bbff6] focus:ring-offset-2"
+      >
         Log in
       </Link>
     );
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "13px" }}>
-      <span style={{ color: "#374151" }}>
+    <div className="flex items-center gap-3 text-sm text-gray-800">
+      <span>
         Logged in as <strong>{email}</strong>
       </span>
       <button
         type="button"
         onClick={() => void signOut()}
-        style={{
-          padding: "6px 10px",
-          borderRadius: "8px",
-          border: "1px solid #e5e7eb",
-          background: "white",
-          cursor: "pointer",
-          fontSize: "12px",
-        }}
+        className={`cursor-pointer rounded-lg px-2.5 py-1.5 text-xs bg-white ${secondaryButton}`}
       >
         Sign out
       </button>

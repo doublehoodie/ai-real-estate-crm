@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send, X } from "lucide-react";
 import type { InboxThreadSummary } from "@/types/inbox";
+import { primaryButton } from "@/lib/ui";
 
 const TEMPLATES = [
   "Hi — just checking in on next steps. What timing works best for you this week?",
@@ -64,7 +65,7 @@ export function FollowUpModal({ open, thread, onClose, onSend }: FollowUpModalPr
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
           <div>
-            <h2 style={{ margin: "0 0 8px", fontSize: "18px", color: "#111827" }}>Follow up</h2>
+            <h2 className="mb-2 text-lg text-gray-900">Follow up</h2>
             <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{thread.subject}</p>
           </div>
           <button
@@ -149,17 +150,7 @@ export function FollowUpModal({ open, thread, onClose, onSend }: FollowUpModalPr
             title="Send"
             aria-label="Send"
             onClick={() => void handleSend()}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "10px",
-              border: "none",
-              background: sending || !body.trim() ? "#9ca3af" : "#111827",
-              color: "white",
-              cursor: sending || !body.trim() ? "default" : "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`inline-flex items-center justify-center rounded-[10px] border-0 p-2 px-3 ${primaryButton}`}
           >
             <Send className="h-4 w-4" aria-hidden />
           </button>

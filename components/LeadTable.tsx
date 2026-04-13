@@ -45,15 +45,7 @@ export function LeadTable({ leads }: LeadTableProps) {
   }, [leads, search, statusFilter]);
 
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "12px",
-        padding: "20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        overflowX: "auto",
-      }}
-    >
+    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div
         style={{
           display: "flex",
@@ -64,7 +56,7 @@ export function LeadTable({ leads }: LeadTableProps) {
           marginBottom: "16px",
         }}
       >
-        <h2 style={{ margin: 0, color: "#111" }}>Leads</h2>
+        <h2 className="m-0 text-gray-900">Leads</h2>
 
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <input
@@ -167,7 +159,7 @@ export function LeadTable({ leads }: LeadTableProps) {
                       padding: "12px",
                     }}
                   >
-                    <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "8px", color: "#111827" }}>
+                    <div className="mb-2 text-xs font-bold text-gray-900">
                       Templates
                     </div>
                     <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "12px" }}>
@@ -175,7 +167,7 @@ export function LeadTable({ leads }: LeadTableProps) {
                       <li>Schedule a showing</li>
                       <li>Pricing follow-up</li>
                     </ul>
-                    <div style={{ fontSize: "12px", fontWeight: 700, margin: "10px 0 4px", color: "#111827" }}>
+                    <div className="mt-2.5 mb-1 text-xs font-bold text-gray-900">
                       AI suggestion
                     </div>
                     <p style={{ margin: 0, color: "#6b7280", fontSize: "12px", lineHeight: 1.4 }}>

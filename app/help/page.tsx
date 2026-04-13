@@ -3,19 +3,12 @@ import { SCORING_RUBRIC, SCORE_INTERPRETATION } from "@/lib/scoring";
 
 export default function HelpPage() {
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        fontFamily: "Arial, sans-serif",
-        background: "#f7f8fa",
-      }}
-    >
+    <main className="flex min-h-screen bg-[#f3f4f6]">
       <Sidebar active="help" />
 
       <section style={{ flex: 1, padding: "32px" }}>
-        <h1 style={{ marginBottom: "8px", color: "#111" }}>Help</h1>
-        <p style={{ color: "#444", marginBottom: "24px", maxWidth: "760px" }}>
+        <h1 className="mb-2 text-gray-900">Help</h1>
+        <p className="mb-6 max-w-[760px] text-gray-500">
           This CRM uses an explainable lead scoring model so agents can quickly prioritize the leads most likely to convert.
         </p>
 

@@ -8,19 +8,9 @@ import type { InboxThreadSummary, ThreadMessageDetail } from "@/types/inbox";
 import { FollowUpModal } from "./FollowUpModal";
 import { ReplyModal } from "./ReplyModal";
 import { ThreadCard } from "./ThreadCard";
+import { primaryButton } from "@/lib/ui";
 
 type InboxTab = "all" | "favorites" | "action";
-
-const tabBtn: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: "10px",
-  border: "1px solid #e5e7eb",
-  background: "white",
-  cursor: "pointer",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
 
 export function InboxPanel() {
   const [sessionReady, setSessionReady] = useState(false);
@@ -254,14 +244,7 @@ export function InboxPanel() {
   const busy = fetching || syncing;
 
   return (
-    <div
-      style={{
-        background: "white",
-        borderRadius: "12px",
-        padding: "20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-      }}
-    >
+    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "12px", flexWrap: "wrap" }}>
         <button
           type="button"
@@ -269,17 +252,7 @@ export function InboxPanel() {
           disabled={busy}
           title="Sync with Gmail"
           aria-label="Sync with Gmail"
-          style={{
-            padding: "8px 10px",
-            borderRadius: "10px",
-            border: "none",
-            background: busy ? "#9ca3af" : "#111827",
-            color: "white",
-            cursor: busy ? "default" : "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          className={`inline-flex items-center justify-center rounded-[10px] border-0 p-2.5 ${primaryButton}`}
         >
           <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} aria-hidden />
         </button>
@@ -294,8 +267,8 @@ export function InboxPanel() {
               justifyContent: "center",
               padding: "8px",
               borderRadius: "10px",
-              border: "1px solid #e5e7eb",
-              color: "#0f766e",
+              border: "1px solid #1bbff6",
+              color: "#1bbff6",
             }}
           >
             <Mail className="h-4 w-4" aria-hidden />
@@ -318,41 +291,41 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("all")}
-          style={{
-            ...tabBtn,
-            borderColor: inboxTab === "all" ? "#111827" : "#e5e7eb",
-            background: inboxTab === "all" ? "#f8fafc" : "white",
-          }}
+          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+            inboxTab === "all"
+              ? "border-[#1bbff6] bg-[#1bbff6] text-white"
+              : "border-gray-200 bg-white hover:bg-[#1bbff6]/10"
+          }`}
           title="All threads"
           aria-label="All threads"
         >
-          <List className="h-4 w-4" strokeWidth={2} color="#374151" />
+          <List className="h-4 w-4" strokeWidth={2} color={inboxTab === "all" ? "#ffffff" : "#374151"} />
         </button>
         <button
           type="button"
           onClick={() => setInboxTab("favorites")}
-          style={{
-            ...tabBtn,
-            borderColor: inboxTab === "favorites" ? "#ca8a04" : "#e5e7eb",
-            background: inboxTab === "favorites" ? "#fffbeb" : "white",
-          }}
+          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+            inboxTab === "favorites"
+              ? "border-[#1bbff6] bg-[#1bbff6] text-white"
+              : "border-gray-200 bg-white hover:bg-[#1bbff6]/10"
+          }`}
           title="Favorites"
           aria-label="Favorites"
         >
-          <Star className="h-4 w-4" strokeWidth={2} color="#ca8a04" />
+          <Star className="h-4 w-4" strokeWidth={2} color={inboxTab === "favorites" ? "#ffffff" : "#ca8a04"} />
         </button>
         <button
           type="button"
           onClick={() => setInboxTab("action")}
-          style={{
-            ...tabBtn,
-            borderColor: inboxTab === "action" ? "#b45309" : "#e5e7eb",
-            background: inboxTab === "action" ? "#fffbeb" : "white",
-          }}
+          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+            inboxTab === "action"
+              ? "border-[#1bbff6] bg-[#1bbff6] text-white"
+              : "border-gray-200 bg-white hover:bg-[#1bbff6]/10"
+          }`}
           title="Needs action"
           aria-label="Needs action"
         >
-          <AlertCircle className="h-4 w-4" strokeWidth={2} color="#b45309" />
+          <AlertCircle className="h-4 w-4" strokeWidth={2} color={inboxTab === "action" ? "#ffffff" : "#b45309"} />
         </button>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Send, X } from "lucide-react";
+import { primaryButton } from "@/lib/ui";
 
 type ReplyModalProps = {
   open: boolean;
@@ -84,7 +85,7 @@ export function ReplyModal({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>Reply</h2>
+          <h2 className="m-0 text-lg text-gray-900">Reply</h2>
           <button
             type="button"
             onClick={onClose}
@@ -160,17 +161,7 @@ export function ReplyModal({
             title="Send"
             aria-label="Send"
             onClick={() => void handleSend()}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "10px",
-              border: "none",
-              background: sending || !body.trim() ? "#9ca3af" : "#0f766e",
-              color: "white",
-              cursor: sending ? "default" : "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`inline-flex items-center justify-center rounded-[10px] border-0 px-3 py-2 ${primaryButton}`}
           >
             <Send className="h-4 w-4" aria-hidden />
           </button>

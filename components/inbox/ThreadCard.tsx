@@ -19,8 +19,9 @@ const iconBtn: React.CSSProperties = {
 
 const iconBtnPrimary: React.CSSProperties = {
   ...iconBtn,
-  borderColor: "#0f766e",
-  color: "#0f766e",
+  borderColor: "#1bbff6",
+  background: "#1bbff6",
+  color: "white",
 };
 
 type ThreadCardProps = {
@@ -128,7 +129,7 @@ export function ThreadCard({
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
-              <strong style={{ color: "#111827", fontSize: "15px" }}>{thread.subject || "(No subject)"}</strong>
+              <strong className="text-[15px] text-gray-900">{thread.subject || "(No subject)"}</strong>
               {thread.needs_attention && (
                 <span
                   style={{
@@ -168,7 +169,7 @@ export function ThreadCard({
           }}
         >
           {hasLead && thread.lead ? (
-            <span style={{ fontSize: "13px", color: "#0f766e" }}>
+            <span style={{ fontSize: "13px", color: "#1bbff6" }}>
               Linked lead:{" "}
               <Link href={`/leads/${thread.lead.id}`} style={{ fontWeight: 600, textDecoration: "underline" }}>
                 {thread.lead.name || thread.lead.email || "View lead"}
@@ -190,7 +191,7 @@ export function ThreadCard({
               style={{
                 padding: "6px",
                 borderRadius: "8px",
-                border: "1px solid #111827",
+                border: "1px solid #1bbff6",
                 background: "white",
                 cursor: linking ? "wait" : "pointer",
                 display: "inline-flex",
@@ -198,7 +199,7 @@ export function ThreadCard({
                 justifyContent: "center",
               }}
             >
-              <UserPlus className="h-4 w-4" strokeWidth={2} color="#111827" aria-hidden />
+              <UserPlus className="h-4 w-4" strokeWidth={2} color="#1bbff6" aria-hidden />
             </button>
           )}
         </div>
@@ -239,7 +240,7 @@ export function ThreadCard({
           <Send className="h-4 w-4" strokeWidth={2} color="#374151" />
         </button>
         <button type="button" onClick={onOpenReply} style={iconBtnPrimary} title="Reply" aria-label="Reply">
-          <Reply className="h-4 w-4" strokeWidth={2} />
+          <Reply className="h-4 w-4" strokeWidth={2} color="#ffffff" />
         </button>
         {thread.needs_attention && (
           <button type="button" onClick={onMarkDone} style={iconBtn} title="Done" aria-label="Done">
@@ -301,7 +302,7 @@ export function ThreadCard({
               justifyContent: "center",
             }}
           >
-            <Check className="h-4 w-4" strokeWidth={2} color="#111827" />
+            <Check className="h-4 w-4" strokeWidth={2} color="#374151" />
           </button>
         </div>
       )}

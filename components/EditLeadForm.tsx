@@ -12,6 +12,7 @@ import {
   stripScoringPersistenceFields,
 } from "@/lib/scoring";
 import type { Lead } from "@/types/lead";
+import { primaryButton } from "@/lib/ui";
 
 type EditLeadFormProps = {
   lead: Lead;
@@ -137,37 +138,20 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      style={{
-        background: "white",
-        borderRadius: "12px",
-        padding: "20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        display: "grid",
-        gap: "14px",
-      }}
+      className="grid gap-3.5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 style={{ margin: 0, fontSize: "18px", color: "#111827" }}>Edit lead</h2>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>
+          <h2 className="m-0 text-lg text-gray-900">Edit lead</h2>
+          <p className="mt-1 text-[13px] text-gray-500">
             Updating any qualification field automatically recalculates the lead score.
           </p>
         </div>
 
-        <div
-          style={{
-            borderRadius: "12px",
-            padding: "12px 14px",
-            background: "#f8fafc",
-            border: "1px solid #e5e7eb",
-            minWidth: "180px",
-          }}
-        >
-          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Score preview</div>
-          <div style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>{scorePreview.score}</div>
-          <div style={{ fontSize: "12px", color: "#6b7280", textTransform: "capitalize" }}>
-            {scorePreview.confidence} confidence
-          </div>
+        <div className="min-w-[180px] rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
+          <div className="mb-1 text-xs text-gray-500">Score preview</div>
+          <div className="text-2xl font-bold text-gray-900">{scorePreview.score}</div>
+          <div className="text-xs capitalize text-gray-500">{scorePreview.confidence} confidence</div>
         </div>
       </div>
 
@@ -206,23 +190,15 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
         </Field>
       </div>
 
-      <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={saving}
-          style={{
-            border: "none",
-            borderRadius: "999px",
-            background: "#111827",
-            color: "white",
-            padding: "10px 16px",
-            fontWeight: 600,
-            cursor: saving ? "default" : "pointer",
-          }}
+          className={`cursor-pointer rounded-full border-0 px-4 py-2.5 font-semibold ${primaryButton}`}
         >
           {saving ? "Saving..." : "Save Changes"}
         </button>
-        {error ? <span style={{ color: "#b42318", fontSize: "13px" }}>{error}</span> : null}
+        {error ? <span className="text-sm text-red-700">{error}</span> : null}
       </div>
     </form>
   );

@@ -146,15 +146,7 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
   }
 
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "12px",
-        padding: "20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        overflowX: "auto",
-      }}
-    >
+    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div
         style={{
           display: "flex",
@@ -165,7 +157,7 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
           marginBottom: "16px",
         }}
       >
-        <h2 style={{ margin: 0, color: "#111" }}>All leads</h2>
+        <h2 className="m-0 text-gray-900">All leads</h2>
 
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <input
@@ -319,15 +311,11 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
             type="button"
             onClick={goToPreviousPage}
             disabled={page <= 1}
-            style={{
-              padding: "6px 10px",
-              borderRadius: "999px",
-              border: "1px solid #e5e7eb",
-              background: page <= 1 ? "#f9fafb" : "white",
-              color: page <= 1 ? "#9ca3af" : "#111827",
-              cursor: page <= 1 ? "default" : "pointer",
-              fontSize: "13px",
-            }}
+            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+              page <= 1
+                ? "cursor-default border border-gray-200 bg-gray-50 text-gray-400"
+                : "cursor-pointer border border-[#1bbff6] bg-white text-[#1bbff6] hover:bg-[#1bbff6]/10"
+            }`}
           >
             Previous
           </button>
@@ -335,15 +323,11 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
             type="button"
             onClick={goToNextPage}
             disabled={page >= totalPages}
-            style={{
-              padding: "6px 10px",
-              borderRadius: "999px",
-              border: "1px solid #e5e7eb",
-              background: page >= totalPages ? "#f9fafb" : "white",
-              color: page >= totalPages ? "#9ca3af" : "#111827",
-              cursor: page >= totalPages ? "default" : "pointer",
-              fontSize: "13px",
-            }}
+            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+              page >= totalPages
+                ? "cursor-default border border-gray-200 bg-gray-50 text-gray-400"
+                : "cursor-pointer border border-[#1bbff6] bg-white text-[#1bbff6] hover:bg-[#1bbff6]/10"
+            }`}
           >
             Next
           </button>

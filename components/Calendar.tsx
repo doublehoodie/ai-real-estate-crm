@@ -48,14 +48,7 @@ export function Calendar() {
   }
 
   return (
-    <div
-      style={{
-        background: "white",
-        borderRadius: "12px",
-        padding: "20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-      }}
-    >
+    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div
         style={{
           display: "flex",
@@ -65,26 +58,24 @@ export function Calendar() {
         }}
       >
         <div>
-          <div style={{ fontSize: "16px", fontWeight: 600, color: "#111" }}>
+          <div className="text-base font-semibold text-gray-900">
             {monthLabel} {year}
           </div>
-          <div style={{ fontSize: "13px", color: "#6b7280" }}>
-            View and plan showings
-          </div>
+          <div className="text-[13px] text-gray-500">View and plan showings</div>
         </div>
 
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             type="button"
             onClick={goToPreviousMonth}
-            style={navButtonStyle}
+            className="cursor-pointer rounded-full border border-[#1bbff6] bg-white px-2.5 py-1.5 text-[13px] text-[#1bbff6] transition-colors hover:bg-[#1bbff6]/10 focus:outline-none focus:ring-2 focus:ring-[#1bbff6]"
           >
             ←
           </button>
           <button
             type="button"
             onClick={goToNextMonth}
-            style={navButtonStyle}
+            className="cursor-pointer rounded-full border border-[#1bbff6] bg-white px-2.5 py-1.5 text-[13px] text-[#1bbff6] transition-colors hover:bg-[#1bbff6]/10 focus:outline-none focus:ring-2 focus:ring-[#1bbff6]"
           >
             →
           </button>
@@ -129,9 +120,9 @@ export function Calendar() {
               style={{
                 minHeight: "64px",
                 borderRadius: "10px",
-                border: cell.isToday ? "1px solid #111827" : "1px solid #e5e7eb",
-                background: cell.isToday ? "#111827" : "white",
-                color: cell.isToday ? "white" : "#111827",
+                border: cell.isToday ? "1px solid #1bbff6" : "1px solid #e5e7eb",
+                background: cell.isToday ? "rgba(27, 191, 246, 0.12)" : "white",
+                color: "#111827",
                 fontSize: "13px",
                 padding: "6px 8px",
                 display: "flex",
@@ -139,7 +130,7 @@ export function Calendar() {
               }}
             >
               <span style={{ fontWeight: 600 }}>{cell.day}</span>
-              <span style={{ marginTop: "auto", fontSize: "11px", color: cell.isToday ? "#e5e7eb" : "#9ca3af" }}>
+              <span style={{ marginTop: "auto", fontSize: "11px", color: "#9ca3af" }}>
                 {/* Placeholder for events */}
               </span>
             </div>
@@ -149,13 +140,3 @@ export function Calendar() {
     </div>
   );
 }
-
-const navButtonStyle: React.CSSProperties = {
-  padding: "6px 10px",
-  borderRadius: "999px",
-  border: "1px solid #e5e7eb",
-  background: "white",
-  cursor: "pointer",
-  fontSize: "13px",
-};
-

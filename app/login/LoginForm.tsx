@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { primaryButton } from "@/lib/ui";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -48,7 +49,6 @@ export function LoginForm() {
         justifyContent: "center",
         padding: "24px",
         background: "var(--background, #f3f5f8)",
-        fontFamily: "var(--font-sans, system-ui, sans-serif)",
       }}
     >
       <div
@@ -61,8 +61,8 @@ export function LoginForm() {
           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
         }}
       >
-        <h1 style={{ margin: "0 0 8px", fontSize: "22px", color: "#111827" }}>Sign in</h1>
-        <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#6b7280" }}>
+        <h1 className="mb-2 text-[22px] text-gray-900">Sign in</h1>
+        <p className="mb-5 text-sm text-gray-500">
           We’ll email you a magic link — no password.
         </p>
 
@@ -90,15 +90,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={status === "sending" || status === "sent"}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "999px",
-              border: "none",
-              background: status === "sent" ? "#9ca3af" : "#111827",
-              color: "white",
-              fontWeight: 600,
-              cursor: status === "sent" ? "default" : "pointer",
-            }}
+            className={`rounded-full border-0 px-4 py-2.5 font-semibold ${primaryButton}`}
           >
             {status === "sending" ? "Sending…" : "Send Magic Link"}
           </button>

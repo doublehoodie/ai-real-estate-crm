@@ -41,19 +41,14 @@ export default async function Home() {
   }
 
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        fontFamily: "Arial, sans-serif",
-        background: "#f7f8fa",
-      }}
-    >
+    <main className="flex min-h-screen bg-[#f3f4f6]">
       <Sidebar active="dashboard" />
 
       <section style={{ flex: 1, padding: "32px" }}>
-        <h1 style={{ marginBottom: "8px", color: "#111" }}>AI Real Estate CRM</h1>
-        <p style={{ color: "#444", marginBottom: "24px" }}>Agent dashboard</p>
+        <h1 className="mb-2 bg-gradient-to-r from-[#1bbff6] to-black bg-clip-text text-4xl font-semibold tracking-tight text-transparent transition-all duration-500 hover:bg-[linear-gradient(to_right,#1bbff6_40%,black_100%)]">
+          Welcome!
+        </h1>
+        <p className="mb-6 text-gray-500">Agent dashboard</p>
 
         <StatCards leads={leads} />
 

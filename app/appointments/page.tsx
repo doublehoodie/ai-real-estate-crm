@@ -3,19 +3,12 @@ import { Calendar } from "@/components/Calendar";
 
 export default function AppointmentsPage() {
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        fontFamily: "Arial, sans-serif",
-        background: "#f7f8fa",
-      }}
-    >
+    <main className="flex min-h-screen bg-[#f3f4f6]">
       <Sidebar active="appointments" />
 
       <section style={{ flex: 1, padding: "32px" }}>
-        <h1 style={{ marginBottom: "8px", color: "#111" }}>Appointments</h1>
-        <p style={{ color: "#444", marginBottom: "24px" }}>
+        <h1 className="mb-2 text-gray-900">Appointments</h1>
+        <p className="mb-6 text-gray-500">
           Central calendar for showings, buyer consults, and follow-ups.
         </p>
 
