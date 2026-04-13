@@ -311,10 +311,10 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
             type="button"
             onClick={goToPreviousPage}
             disabled={page <= 1}
-            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
               page <= 1
                 ? "cursor-default border border-gray-200 bg-gray-50 text-gray-400"
-                : "cursor-pointer border border-[#1bbff6] bg-white text-[#1bbff6] hover:bg-[#1bbff6]/10"
+                : "cursor-pointer border border-[#1AB523] bg-white text-[#1AB523] hover:bg-[#1AB523]/10"
             }`}
           >
             Previous
@@ -323,10 +323,10 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
             type="button"
             onClick={goToNextPage}
             disabled={page >= totalPages}
-            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
               page >= totalPages
                 ? "cursor-default border border-gray-200 bg-gray-50 text-gray-400"
-                : "cursor-pointer border border-[#1bbff6] bg-white text-[#1bbff6] hover:bg-[#1bbff6]/10"
+                : "cursor-pointer border border-[#1AB523] bg-white text-[#1AB523] hover:bg-[#1AB523]/10"
             }`}
           >
             Next

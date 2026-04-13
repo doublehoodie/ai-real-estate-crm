@@ -6,9 +6,9 @@ type SidebarProps = {
 };
 
 const navInactive =
-  "rounded-lg px-3 py-2.5 text-gray-700 no-underline outline-none transition-colors hover:bg-[#1bbff6]/20 hover:text-black focus-visible:ring-2 focus-visible:ring-[#1bbff6]";
+  "rounded-lg px-3 py-2.5 text-gray-700 no-underline outline-none transition-colors hover:bg-[#1AB523]/20 hover:text-black focus-visible:ring-2 focus-visible:ring-[#1AB523]";
 const navActive =
-  "rounded-lg bg-[#1bbff6] px-3 py-2.5 font-medium text-white no-underline outline-none transition-colors hover:bg-[#1aa8db] focus-visible:ring-2 focus-visible:ring-[#1bbff6]";
+  "rounded-lg bg-[#1AB523] px-3 py-2.5 font-medium text-white no-underline outline-none transition-colors hover:bg-[#169e1f] focus-visible:ring-2 focus-visible:ring-[#1AB523]";
 
 export function Sidebar({ active = "dashboard" }: SidebarProps) {
   return (
@@ -16,7 +16,7 @@ export function Sidebar({ active = "dashboard" }: SidebarProps) {
       <div className="flex items-center px-4 py-4">
         <Link href="/" className="flex items-center">
           <Image
-            src="/flowleads.png"
+            src="/grassleads.png"
             alt="FlowLeads Logo"
             width={120}
             height={40}

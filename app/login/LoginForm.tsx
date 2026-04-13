@@ -19,8 +19,12 @@ export function LoginForm() {
     setStatus("sending");
     setMessage(null);
 
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
+    const origin =
+      fromEnv ||
+      (typeof window !== "undefined" ? window.location.origin : "");
     const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    console.log("Magic link emailRedirectTo:", emailRedirectTo);
 
     const { error } = await supabase.auth.signInWithOtp({
       email,

@@ -242,7 +242,7 @@ export function AddLeadForm() {
           type="checkbox"
           checked={form.is_favorite}
           onChange={(e) => handleChange("is_favorite", e.target.checked)}
-          className="size-4 rounded border-slate-300 text-[#1bbff6] focus:ring-2 focus:ring-[#1bbff6]"
+          className="size-4 rounded border-slate-300 text-[#1AB523] focus:ring-2 focus:ring-[#1AB523]"
         />
         <span>Mark as favorite</span>
       </label>

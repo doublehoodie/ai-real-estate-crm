@@ -68,14 +68,14 @@ export function Calendar() {
           <button
             type="button"
             onClick={goToPreviousMonth}
-            className="cursor-pointer rounded-full border border-[#1bbff6] bg-white px-2.5 py-1.5 text-[13px] text-[#1bbff6] transition-colors hover:bg-[#1bbff6]/10 focus:outline-none focus:ring-2 focus:ring-[#1bbff6]"
+            className="cursor-pointer rounded-full border border-[#1AB523] bg-white px-2.5 py-1.5 text-[13px] text-[#1AB523] transition-colors hover:bg-[#1AB523]/10 focus:outline-none focus:ring-2 focus:ring-[#1AB523]"
           >
             ←
           </button>
           <button
             type="button"
             onClick={goToNextMonth}
-            className="cursor-pointer rounded-full border border-[#1bbff6] bg-white px-2.5 py-1.5 text-[13px] text-[#1bbff6] transition-colors hover:bg-[#1bbff6]/10 focus:outline-none focus:ring-2 focus:ring-[#1bbff6]"
+            className="cursor-pointer rounded-full border border-[#1AB523] bg-white px-2.5 py-1.5 text-[13px] text-[#1AB523] transition-colors hover:bg-[#1AB523]/10 focus:outline-none focus:ring-2 focus:ring-[#1AB523]"
           >
             →
           </button>
@@ -120,8 +120,8 @@ export function Calendar() {
               style={{
                 minHeight: "64px",
                 borderRadius: "10px",
-                border: cell.isToday ? "1px solid #1bbff6" : "1px solid #e5e7eb",
-                background: cell.isToday ? "rgba(27, 191, 246, 0.12)" : "white",
+                border: cell.isToday ? "1px solid #1AB523" : "1px solid #e5e7eb",
+                background: cell.isToday ? "rgba(26, 181, 35, 0.12)" : "white",
                 color: "#111827",
                 fontSize: "13px",
                 padding: "6px 8px",

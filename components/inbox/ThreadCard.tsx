@@ -19,8 +19,8 @@ const iconBtn: React.CSSProperties = {
 
 const iconBtnPrimary: React.CSSProperties = {
   ...iconBtn,
-  borderColor: "#1bbff6",
-  background: "#1bbff6",
+  borderColor: "#1AB523",
+  background: "#1AB523",
   color: "white",
 };
 
@@ -169,7 +169,7 @@ export function ThreadCard({
           }}
         >
           {hasLead && thread.lead ? (
-            <span style={{ fontSize: "13px", color: "#1bbff6" }}>
+            <span style={{ fontSize: "13px", color: "#1AB523" }}>
               Linked lead:{" "}
               <Link href={`/leads/${thread.lead.id}`} style={{ fontWeight: 600, textDecoration: "underline" }}>
                 {thread.lead.name || thread.lead.email || "View lead"}
@@ -191,7 +191,7 @@ export function ThreadCard({
               style={{
                 padding: "6px",
                 borderRadius: "8px",
-                border: "1px solid #1bbff6",
+                border: "1px solid #1AB523",
                 background: "white",
                 cursor: linking ? "wait" : "pointer",
                 display: "inline-flex",
@@ -199,7 +199,7 @@ export function ThreadCard({
                 justifyContent: "center",
               }}
             >
-              <UserPlus className="h-4 w-4" strokeWidth={2} color="#1bbff6" aria-hidden />
+              <UserPlus className="h-4 w-4" strokeWidth={2} color="#1AB523" aria-hidden />
             </button>
           )}
         </div>

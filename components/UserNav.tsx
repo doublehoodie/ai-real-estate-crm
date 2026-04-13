@@ -53,7 +53,7 @@ export function UserNav() {
     return (
       <Link
         href="/login"
-        className="rounded text-sm font-semibold text-[#1bbff6] transition-colors hover:text-[#1aa8db] focus:outline-none focus:ring-2 focus:ring-[#1bbff6] focus:ring-offset-2"
+        className="rounded text-sm font-semibold text-[#1AB523] transition-colors hover:text-[#169e1f] focus:outline-none focus:ring-2 focus:ring-[#1AB523] focus:ring-offset-2"
       >
         Log in
       </Link>

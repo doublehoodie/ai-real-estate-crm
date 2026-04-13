@@ -261,14 +261,20 @@ export function InboxPanel() {
             href="/api/auth/google"
             title="Connect Gmail"
             aria-label="Connect Gmail"
+            onClick={() =>
+              console.log(
+                "Redirect URL:",
+                `${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/callback/google`,
+              )
+            }
             style={{
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               padding: "8px",
               borderRadius: "10px",
-              border: "1px solid #1bbff6",
-              color: "#1bbff6",
+              border: "1px solid #1AB523",
+              color: "#1AB523",
             }}
           >
             <Mail className="h-4 w-4" aria-hidden />
@@ -291,10 +297,10 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("all")}
-          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
             inboxTab === "all"
-              ? "border-[#1bbff6] bg-[#1bbff6] text-white"
-              : "border-gray-200 bg-white hover:bg-[#1bbff6]/10"
+              ? "border-[#1AB523] bg-[#1AB523] text-white"
+              : "border-gray-200 bg-white hover:bg-[#1AB523]/10"
           }`}
           title="All threads"
           aria-label="All threads"
@@ -304,10 +310,10 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("favorites")}
-          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
             inboxTab === "favorites"
-              ? "border-[#1bbff6] bg-[#1bbff6] text-white"
-              : "border-gray-200 bg-white hover:bg-[#1bbff6]/10"
+              ? "border-[#1AB523] bg-[#1AB523] text-white"
+              : "border-gray-200 bg-white hover:bg-[#1AB523]/10"
           }`}
           title="Favorites"
           aria-label="Favorites"
@@ -317,10 +323,10 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("action")}
-          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1bbff6] ${
+          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
             inboxTab === "action"
-              ? "border-[#1bbff6] bg-[#1bbff6] text-white"
-              : "border-gray-200 bg-white hover:bg-[#1bbff6]/10"
+              ? "border-[#1AB523] bg-[#1AB523] text-white"
+              : "border-gray-200 bg-white hover:bg-[#1AB523]/10"
           }`}
           title="Needs action"
           aria-label="Needs action"
