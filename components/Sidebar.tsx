@@ -82,7 +82,7 @@ export function Sidebar({ active = "dashboard" }: SidebarProps) {
 
       <nav className="flex flex-col gap-0.5 px-3 pb-8">
         <NavLink href="/action" label="Seed" active={active === "action"} icon={Sparkles} />
-        <NavLink href="/" label="Dashboard" active={active === "dashboard"} icon={LayoutDashboard} />
+        <NavLink href="/dashboard" label="Dashboard" active={active === "dashboard"} icon={LayoutDashboard} />
         <NavLink href="/inbox" label="Inbox" active={active === "inbox"} icon={Inbox} />
         <NavLink href="/leads" label="Leads" active={active === "leads"} icon={Users} />
         <NavLink href="/calendar" label="Calendar" active={active === "calendar"} icon={CalendarDays} />
