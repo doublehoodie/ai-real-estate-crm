@@ -39,12 +39,12 @@ export async function GET(request: Request) {
   }
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return redirectTo(request, "/login?error=session_failed");
   }
 
-  return redirectTo(request, "/dashboard");
+  return redirectTo(request, "/seed");
 }

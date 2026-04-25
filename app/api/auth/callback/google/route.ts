@@ -124,7 +124,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const response = NextResponse.redirect(new URL("/dashboard", req.url));
+    const response = NextResponse.redirect(new URL("/seed", req.url));
     response.cookies.delete("gmail_oauth_state");
     return response;
   } catch (error) {
