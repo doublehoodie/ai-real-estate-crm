@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
 
-  const response = NextResponse.redirect(new URL("/seed", request.url));
+  let response = NextResponse.redirect(new URL("/seed", request.url));
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -14,12 +14,14 @@ export async function GET(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => cookieStore.get(name)?.value,
-        set: (name, value, options) => {
-          response.cookies.set(name, value, options);
+        getAll() {
+          return cookieStore.getAll();
         },
-        remove: (name, options) => {
-          response.cookies.set(name, "", options);
+        setAll(cookiesToSet) {
+          response = NextResponse.redirect(new URL("/seed", request.url));
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
         },
       },
     },
