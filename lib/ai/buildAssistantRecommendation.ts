@@ -30,6 +30,8 @@ export function mapApiLeadsToDecisionLeads(rows: ApiLeadRow[] | undefined): Deci
       name: (lead.name ?? "Untitled lead").trim() || "Untitled lead",
       ai_score: typeof lead.ai_score === "number" ? lead.ai_score : 0,
       lastContactDate: lead.last_contact_at ?? lead.updated_at ?? "",
+      status: lead.status ?? null,
+      aiSummary: lead.ai_summary ?? null,
     }));
 }
 

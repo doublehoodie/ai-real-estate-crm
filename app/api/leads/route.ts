@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { handleAuthError, requireAuthUserId } from "@/lib/requireAuthUser";
 
 const ACTION_WINDOW_SELECT =
-  "id, name, email, status, ai_score, ai_confidence, ai_summary, ai_next_action, ai_followup, " +
+  "id, name, email, status, budget, timeline, ai_score, ai_confidence, ai_summary, ai_next_action, ai_followup, " +
   "ai_signals, has_contradictions, ai_score_breakdown, ai_intent_level, ai_processed, " +
   "last_contact_at, updated_at";
 

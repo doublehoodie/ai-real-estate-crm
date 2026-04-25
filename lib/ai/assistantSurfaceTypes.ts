@@ -4,6 +4,14 @@
 
 export type AssistantExecutableAction = "draft_message" | "schedule_meeting" | "view_lead";
 
+export type SeedActionType = "follow_up" | "schedule" | "view_lead" | "reengage";
+
+export type SeedAction = {
+  label: string;
+  type: SeedActionType;
+  leadId?: string;
+};
+
 export type AssistantStep = {
   label: string;
   action: AssistantExecutableAction;
@@ -23,7 +31,13 @@ export type AssistantActionRecommendation = {
   };
 };
 
-export type AssistantMessageContent = string | AssistantActionRecommendation;
+export type SeedStructuredResponse = {
+  type: "seed_response";
+  text: string;
+  actions?: SeedAction[];
+};
+
+export type AssistantMessageContent = string | AssistantActionRecommendation | SeedStructuredResponse;
 
 export type ExecuteActionPayload = {
   action: AssistantExecutableAction;
