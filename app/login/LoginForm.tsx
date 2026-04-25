@@ -84,6 +84,9 @@ export function LoginForm() {
         <p className="mb-6 text-center text-sm text-gray-500">
           We’ll email you a magic link — no password.
         </p>
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-800">
+          New users: if sign-in does not complete on the first attempt, please sign in again while we fix a temporary login issue.
+        </p>
 
         {errorParam && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-700">{errorParam}</p>}
 
