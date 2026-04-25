@@ -10,6 +10,13 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  function withSupabaseCookies(target: NextResponse) {
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      target.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return target;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,8 +38,6 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -46,14 +51,14 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/seed";
     url.search = "";
-    return NextResponse.redirect(url);
+    return withSupabaseCookies(NextResponse.redirect(url));
   }
 
   if (!user && !isLogin && !isAuthCallback && !isApi) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    return withSupabaseCookies(NextResponse.redirect(url));
   }
 
   return supabaseResponse;
