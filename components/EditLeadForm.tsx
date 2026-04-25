@@ -7,12 +7,14 @@ import { deriveBudgetFields } from "@/lib/budget";
 import { coercePhoneFromApi, normalizePhoneForStorage } from "@/lib/phone";
 import {
   buildScoredLeadPayload,
+  computeAiScoreFromBreakdown,
+  getScoreBand,
   isMissingColumnError,
   scoreLead,
   stripScoringPersistenceFields,
 } from "@/lib/scoring";
 import type { Lead } from "@/types/lead";
-import { primaryButton } from "@/lib/ui";
+import { inputFieldClass, primaryButton } from "@/lib/ui";
 
 type EditLeadFormProps = {
   lead: Lead;
@@ -42,14 +44,38 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const scorePreview = useMemo(
-    () =>
-      scoreLead({
-        ...lead,
-        ...form,
-      }),
-    [form, lead],
-  );
+  const aiScorePreview = useMemo(() => {
+    const computedScore = computeAiScoreFromBreakdown(lead.ai_score_breakdown);
+    console.log("[SCORE DEBUG]", {
+      ai_score: lead.ai_score ?? null,
+      breakdown: lead.ai_score_breakdown ?? null,
+      computedScore,
+    });
+
+    if (computedScore !== null) {
+      return {
+        aiScore: computedScore,
+        confidence: getScoreBand(computedScore).label.toLowerCase(),
+      };
+    }
+
+    if (lead.ai_processed === true) {
+      return {
+        aiScore: 0,
+        confidence: getScoreBand(0).label.toLowerCase(),
+      };
+    }
+
+    const fallback = scoreLead({
+      ...lead,
+      ...form,
+    });
+
+    return {
+      aiScore: fallback.score,
+      confidence: fallback.confidence,
+    };
+  }, [form, lead]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,6 +83,15 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
     setError(null);
 
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user?.id) {
+        setError("You must be logged in to edit leads.");
+        return;
+      }
+
       const { budget, budget_value } = deriveBudgetFields(form.budget || null);
       const payload = buildScoredLeadPayload({
         name: form.name || null,
@@ -73,13 +108,14 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
       const { error: updateError } = await supabase
         .from("leads")
         .update(fullUpdate)
-        .eq("id", lead.id);
+        .eq("id", lead.id)
+        .eq("user_id", user.id);
 
       if (updateError) {
         const message = updateError.message ?? "";
         const scoringColumnMissing =
-          isMissingColumnError(message, "score_breakdown") ||
-          isMissingColumnError(message, "score_explanation") ||
+          isMissingColumnError(message, "ai_score_breakdown") ||
+          isMissingColumnError(message, "ai_score") ||
           isMissingColumnError(message, "updated_at");
         const budgetValueColumnMissing = isMissingColumnError(message, "budget_value");
 
@@ -100,7 +136,8 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
         const { error: fallbackError } = await supabase
           .from("leads")
           .update(fallbackPayload)
-          .eq("id", lead.id);
+          .eq("id", lead.id)
+          .eq("user_id", user.id);
 
         if (fallbackError) {
           setError(fallbackError.message || "Failed to update lead.");
@@ -122,6 +159,23 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
         console.error("[EditLeadForm] lead-profile-note mirror:", e);
       }
 
+      const aiInput = [form.notes, form.timeline, form.budget, form.status]
+        .filter((v): v is string => typeof v === "string")
+        .join("\n")
+        .trim();
+      if (aiInput.length > 20) {
+        try {
+          await fetch("/api/ai/process-lead", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lead_id: lead.id, email_body: aiInput }),
+          });
+        } catch (e) {
+          console.error("[EditLeadForm] AI scoring trigger:", e);
+        }
+      }
+
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -138,41 +192,66 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-3.5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+      className="grid gap-3.5 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur-md"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="m-0 text-lg text-gray-900">Edit lead</h2>
-          <p className="mt-1 text-[13px] text-gray-500">
+          <h2 className="m-0 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Edit lead</h2>
+          <p className="mt-1 text-[13px] text-slate-700 dark:text-slate-300">
             Updating any qualification field automatically recalculates the lead score.
           </p>
         </div>
 
-        <div className="min-w-[180px] rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
-          <div className="mb-1 text-xs text-gray-500">Score preview</div>
-          <div className="text-2xl font-bold text-gray-900">{scorePreview.score}</div>
-          <div className="text-xs capitalize text-gray-500">{scorePreview.confidence} confidence</div>
+        <div className="min-w-[180px] rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3.5 py-3">
+          <div className="mb-1 text-xs text-slate-700 dark:text-slate-300">Score preview</div>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{aiScorePreview.aiScore}</div>
+          <div className="text-xs capitalize text-slate-700 dark:text-slate-300">{aiScorePreview.confidence} confidence</div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px 16px" }}>
         <Field label="Name">
-          <input value={form.name} onChange={(e) => handleChange("name", e.target.value)} style={inputStyle} />
+          <input
+            value={form.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            className={`${inputFieldClass} bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
+          />
         </Field>
         <Field label="Email">
-          <input type="email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} style={inputStyle} />
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => handleChange("email", e.target.value)}
+            className={`${inputFieldClass} bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
+          />
         </Field>
         <Field label="Phone">
-          <input value={form.phone} onChange={(e) => handleChange("phone", e.target.value)} style={inputStyle} />
+          <input
+            value={form.phone}
+            onChange={(e) => handleChange("phone", e.target.value)}
+            className={`${inputFieldClass} bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
+          />
         </Field>
         <Field label="Budget">
-          <input value={form.budget} onChange={(e) => handleChange("budget", e.target.value)} style={inputStyle} />
+          <input
+            value={form.budget}
+            onChange={(e) => handleChange("budget", e.target.value)}
+            className={`${inputFieldClass} bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
+          />
         </Field>
         <Field label="Timeline">
-          <input value={form.timeline} onChange={(e) => handleChange("timeline", e.target.value)} style={inputStyle} />
+          <input
+            value={form.timeline}
+            onChange={(e) => handleChange("timeline", e.target.value)}
+            className={`${inputFieldClass} bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
+          />
         </Field>
         <Field label="Status">
-          <select value={form.status} onChange={(e) => handleChange("status", e.target.value)} style={inputStyle}>
+          <select
+            value={form.status}
+            onChange={(e) => handleChange("status", e.target.value)}
+            className={`${inputFieldClass} pr-8 bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
+          >
             <option value="New">New</option>
             <option value="Hot">Hot</option>
             <option value="Warm">Warm</option>
@@ -185,7 +264,7 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
           <textarea
             value={form.notes}
             onChange={(e) => handleChange("notes", e.target.value)}
-            style={{ ...inputStyle, minHeight: "120px", gridColumn: "1 / -1" }}
+            className={`${inputFieldClass} min-h-[120px] resize-y [grid-column:1/-1] bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-green-500`}
           />
         </Field>
       </div>
@@ -194,11 +273,11 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
         <button
           type="submit"
           disabled={saving}
-          className={`cursor-pointer rounded-full border-0 px-4 py-2.5 font-semibold ${primaryButton}`}
+          className={`cursor-pointer text-sm ${primaryButton}`}
         >
           {saving ? "Saving..." : "Save Changes"}
         </button>
-        {error ? <span className="text-sm text-red-700">{error}</span> : null}
+        {error ? <span className="text-sm text-red-600 dark:text-red-300">{error}</span> : null}
       </div>
     </form>
   );
@@ -206,17 +285,9 @@ export function EditLeadForm({ lead }: EditLeadFormProps) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "#374151" }}>
+    <label className="flex flex-col gap-1.5 text-[13px] text-slate-700 dark:text-slate-300">
       <span>{label}</span>
       {children}
     </label>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: "10px",
-  border: "1px solid #e5e7eb",
-  fontSize: "14px",
-  background: "white",
-};

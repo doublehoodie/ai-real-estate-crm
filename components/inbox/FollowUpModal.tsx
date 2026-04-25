@@ -42,82 +42,38 @@ export function FollowUpModal({ open, thread, onClose, onSend }: FollowUpModalPr
     <div
       role="dialog"
       aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 50,
-        padding: "16px",
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
     >
-      <div
-        style={{
-          background: "white",
-          borderRadius: "14px",
-          maxWidth: "520px",
-          width: "100%",
-          padding: "20px",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
-        }}
-      >
+      <div className="w-full max-w-[520px] rounded-2xl border border-white/10 bg-zinc-900/95 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.55)]">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
           <div>
-            <h2 className="mb-2 text-lg text-gray-900">Follow up</h2>
-            <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>{thread.subject}</p>
+            <h2 className="mb-2 text-lg font-semibold tracking-tight text-zinc-100">Follow up</h2>
+            <p className="m-0 text-[13px] text-zinc-400">{thread.subject}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             title="Close"
             aria-label="Close"
-            style={{
-              padding: "8px",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              background: "white",
-              cursor: "pointer",
-              display: "inline-flex",
-            }}
+            className="inline-flex cursor-pointer rounded-lg border border-white/10 bg-zinc-950 p-2 transition-colors hover:bg-zinc-800"
           >
-            <X className="h-4 w-4" strokeWidth={2} color="#374151" />
+            <X className="h-4 w-4 text-zinc-300" strokeWidth={2} />
           </button>
         </div>
 
-        <div
-          style={{
-            background: "#f0fdf4",
-            border: "1px solid #bbf7d0",
-            borderRadius: "10px",
-            padding: "12px",
-            marginTop: "14px",
-            marginBottom: "14px",
-            fontSize: "13px",
-            color: "#166534",
-          }}
-        >
-          <strong style={{ display: "block", marginBottom: "4px" }}>AI suggestion (placeholder)</strong>
+        <div className="mb-3 mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-200">
+          <strong className="mb-1 block">AI suggestion (placeholder)</strong>
           Suggest acknowledging their last message and proposing one concrete next step (e.g. a call time).
         </div>
 
-        <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "6px" }}>Templates</p>
+        <p className="mb-1.5 text-xs text-zinc-400">Templates</p>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
           {TEMPLATES.map((t) => (
             <button
               key={t.slice(0, 24)}
               type="button"
               onClick={() => setBody(t)}
-              style={{
-                textAlign: "left",
-                fontSize: "13px",
-                padding: "8px 10px",
-                borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                background: "#fafafa",
-                cursor: "pointer",
-              }}
+              className="cursor-pointer rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-2 text-left text-[13px] text-zinc-300 transition-colors hover:bg-zinc-800"
             >
               {t}
             </button>
@@ -129,19 +85,10 @@ export function FollowUpModal({ open, thread, onClose, onSend }: FollowUpModalPr
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write your follow-up..."
           rows={6}
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            borderRadius: "10px",
-            border: "1px solid #e5e7eb",
-            padding: "10px",
-            fontSize: "14px",
-            marginBottom: "12px",
-            fontFamily: "inherit",
-          }}
+          className="mb-3 w-full rounded-xl border border-white/10 bg-zinc-950 p-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
 
-        {error && <p style={{ color: "#b91c1c", fontSize: "13px", marginTop: 0 }}>{error}</p>}
+        {error && <p className="mt-0 text-[13px] text-red-300">{error}</p>}
 
         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
           <button
@@ -150,7 +97,7 @@ export function FollowUpModal({ open, thread, onClose, onSend }: FollowUpModalPr
             title="Send"
             aria-label="Send"
             onClick={() => void handleSend()}
-            className={`inline-flex items-center justify-center rounded-[10px] border-0 p-2 px-3 ${primaryButton}`}
+            className={`inline-flex items-center justify-center px-3 py-2 ${primaryButton}`}
           >
             <Send className="h-4 w-4" aria-hidden />
           </button>

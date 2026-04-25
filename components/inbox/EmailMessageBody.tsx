@@ -7,7 +7,7 @@ type EmailMessageBodyProps = {
 };
 
 function PlainBody({ children }: { children: string }) {
-  return <pre className="m-0 whitespace-pre-wrap text-sm">{children}</pre>;
+  return <pre className="m-0 whitespace-pre-wrap font-sans text-sm text-zinc-200">{children}</pre>;
 }
 
 /**
@@ -36,7 +36,7 @@ export function EmailMessageBody({ bodyText }: EmailMessageBodyProps) {
     }
     return (
       <div
-        className="prose max-w-none text-sm"
+        className="prose prose-sm prose-invert max-w-none font-sans text-sm text-zinc-200 prose-pre:font-sans prose-code:font-sans"
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
     );

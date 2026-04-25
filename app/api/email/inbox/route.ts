@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadInboxThreadsForUser } from "@/lib/inbox/loadInboxFromDb";
 import { reconcileEmailsToLeads } from "@/lib/inbox/reconcileEmailLeads";
+import { runInboxAiCatchup } from "@/lib/inbox/runInboxAiCatchup";
 import { handleAuthError, requireAuthUserId } from "@/lib/requireAuthUser";
 
 /**
@@ -22,7 +23,9 @@ export async function GET() {
 
     const mailboxEmail = (integration?.email as string | undefined)?.trim() ?? "";
 
-    const { threads } = await loadInboxThreadsForUser(supabase, userId);
+    let { threads } = await loadInboxThreadsForUser(supabase, userId);
+    const catchup = await runInboxAiCatchup(supabase, userId, threads);
+    threads = catchup.threads;
 
     return NextResponse.json({
       success: true,

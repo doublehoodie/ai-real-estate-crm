@@ -6,6 +6,7 @@ import {
 } from "@/lib/scoring";
 import { handleAuthError, requireAuthUserId } from "@/lib/requireAuthUser";
 import { isUuid, newLeadId } from "@/lib/ids";
+import { triggerAiIfNeeded } from "@/lib/ai/triggerAiIfNeeded";
 
 type Body = {
   contactEmail: string;
@@ -68,8 +69,8 @@ export async function POST(request: NextRequest) {
       if (insertError) {
         const message = insertError.message ?? "";
         const scoringColumnMissing =
-          isMissingColumnError(message, "score_breakdown") ||
-          isMissingColumnError(message, "score_explanation") ||
+          isMissingColumnError(message, "ai_score_breakdown") ||
+          isMissingColumnError(message, "ai_score") ||
           isMissingColumnError(message, "updated_at");
 
         if (!scoringColumnMissing) {
@@ -174,6 +175,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const aiEmailBody = await getLatestLinkedEmailBody({
+      supabase,
+      userId,
+      leadId,
+      threadId,
+      contactEmail,
+    });
+
+    try {
+      const result = await triggerAiIfNeeded(supabase, userId, leadId, aiEmailBody, {
+        reason: "inbox_manual_link_lead",
+      });
+      if (result?.status === "skipped" && result.reason !== "already_processed") {
+        console.warn("[inbox/leads] AI lead qualification skipped:", result);
+      }
+    } catch (error) {
+      console.error("[inbox/leads] AI lead qualification failed:", error);
+    }
+
     return NextResponse.json({ success: true, leadId });
   } catch (error) {
     const auth = handleAuthError(error);
@@ -183,4 +203,41 @@ export async function POST(request: NextRequest) {
     console.error(error);
     return NextResponse.json({ error: "Failed to add lead from inbox" }, { status: 500 });
   }
+}
+
+async function getLatestLinkedEmailBody({
+  supabase,
+  userId,
+  leadId,
+  threadId,
+  contactEmail,
+}: {
+  supabase: Awaited<ReturnType<typeof requireAuthUserId>>["supabase"];
+  userId: string;
+  leadId: string;
+  threadId: string | null;
+  contactEmail: string;
+}): Promise<string | null> {
+  let query = supabase
+    .from("emails")
+    .select("body, snippet")
+    .eq("user_id", userId)
+    .eq("lead_id", leadId)
+    .order("received_at", { ascending: false })
+    .limit(1);
+
+  if (threadId) {
+    query = query.eq("thread_id", threadId);
+  } else {
+    query = query.or(`from_email.eq.${contactEmail},to_email.eq.${contactEmail}`);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    console.error("[inbox/leads] latest linked email lookup:", error);
+    return null;
+  }
+
+  return data?.body?.trim() || data?.snippet?.trim() || null;
 }

@@ -8,18 +8,21 @@ import { displayBudgetText } from "@/lib/format";
 import { LeadScoreBadge } from "@/components/LeadScoreBadge";
 import { LeadScoreDetails } from "@/components/LeadScoreDetails";
 import { LeadFavoriteStar } from "@/components/LeadFavoriteStar";
+import { CSVUploader } from "@/components/import/CSVUploader";
+import { inputFieldClassAuto } from "@/lib/ui";
+import { scoreColorsFromAiScore } from "@/lib/ui/scoreColors";
 
 type LeadTableFullProps = {
   leads: Lead[] | null;
 };
 
-type SortKey = "name" | "email" | "phone" | "budget" | "timeline" | "score" | "status" | "notes" | "created_at";
+type SortKey = "name" | "email" | "phone" | "budget" | "timeline" | "ai_score" | "status" | "created_at";
 
 export function LeadTableFull({ leads }: LeadTableFullProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "Hot" | "Warm" | "Cold">("all");
-  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortKey, setSortKey] = useState<SortKey>("ai_score");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -41,7 +44,21 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
 
     setFavoriteOverrides((prev) => ({ ...prev, [lead.id]: next }));
 
-    const { error } = await supabase.from("leads").update({ is_favorite: next }).eq("id", lead.id);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user?.id) {
+      console.error("Favorite toggle user error:", userError);
+      setFavoriteOverrides((prev) => ({ ...prev, [lead.id]: current }));
+      return;
+    }
+
+    const { error } = await supabase
+      .from("leads")
+      .update({ is_favorite: next })
+      .eq("id", lead.id)
+      .eq("user_id", user.id);
 
     if (error) {
       console.error(error);
@@ -61,8 +78,8 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
     const allLeads = (leads ?? []).slice();
 
     const filtered = allLeads.filter((lead) => {
-      const matchesStatus =
-        statusFilter === "all" || (lead.status && lead.status.toLowerCase() === statusFilter.toLowerCase());
+      const tierLabel = scoreColorsFromAiScore(lead.ai_score).label.toLowerCase();
+      const matchesStatus = statusFilter === "all" || tierLabel === statusFilter.toLowerCase();
 
       const query = search.trim().toLowerCase();
       if (!query) return matchesStatus;
@@ -94,10 +111,9 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
           case "budget":
           case "timeline":
           case "status":
-          case "notes":
             return (lead[sortKey] ?? "").toString().toLowerCase();
-          case "score":
-            return lead.score ?? -Infinity;
+          case "ai_score":
+            return lead.ai_score ?? -Infinity;
           case "created_at":
             return lead.created_at ? new Date(lead.created_at).getTime() : 0;
           default:
@@ -128,7 +144,7 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
     setPage(1);
     setSortKey((currentKey) => {
       if (currentKey !== nextKey) {
-        setSortDirection(nextKey === "score" ? "desc" : "asc");
+        setSortDirection(nextKey === "ai_score" ? "desc" : "asc");
         return nextKey;
       }
 
@@ -146,7 +162,9 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <CSVUploader>
+      {({ openPicker, importing }) => (
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 shadow-lg backdrop-blur transition duration-200 ease-out hover:scale-[1.01]">
       <div
         style={{
           display: "flex",
@@ -157,32 +175,32 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
           marginBottom: "16px",
         }}
       >
-        <h2 className="m-0 text-gray-900">All leads</h2>
+        <h2 className="m-0 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">All leads</h2>
 
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={openPicker}
+            disabled={importing}
+            className={`rounded-md px-3 py-2 text-sm font-medium ${
+              importing
+                ? "cursor-default border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-slate-400"
+                : "border border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-green-600 hover:text-white"
+            }`}
+          >
+            {importing ? "Importing..." : "Import Leads"}
+          </button>
           <input
             type="text"
             placeholder="Search by name, email, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              fontSize: "14px",
-              minWidth: "220px",
-            }}
+            className={`min-w-[220px] max-w-md ${inputFieldClassAuto}`}
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-            style={{
-              padding: "8px 10px",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              fontSize: "14px",
-              backgroundColor: "white",
-            }}
+            className={`min-w-[140px] ${inputFieldClassAuto}`}
           >
             <option value="all">All statuses</option>
             <option value="Hot">Hot</option>
@@ -192,51 +210,47 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
         </div>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table className="w-full border-collapse">
         <thead>
           <tr>
             <th
               style={{ ...titleCaseHeaderCellStyle, width: "44px", textAlign: "center" }}
+              className="text-slate-600 dark:text-slate-400"
               aria-label="Favorite"
             />
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("name")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("name")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Name
               </button>
             </th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("email")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("email")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Email
               </button>
             </th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("phone")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("phone")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Phone
               </button>
             </th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("budget")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("budget")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Budget
               </button>
             </th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("timeline")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("timeline")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Timeline
               </button>
             </th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("score")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("ai_score")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Score
               </button>
             </th>
-            <th style={titleCaseHeaderCellStyle}>Breakdown</th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("notes")} style={headerButtonStyle}>
-                Notes
-              </button>
-            </th>
-            <th style={titleCaseHeaderCellStyle}>
-              <button type="button" onClick={() => handleSort("created_at")} style={headerButtonStyle}>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">Breakdown</th>
+            <th style={titleCaseHeaderCellStyle} className="text-slate-600 dark:text-slate-400">
+              <button type="button" onClick={() => handleSort("created_at")} style={headerButtonStyle} className="text-slate-600 dark:text-slate-400">
                 Created
               </button>
             </th>
@@ -246,6 +260,7 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
           {rows.map((lead) => (
             <tr
               key={lead.id}
+              className="transition-colors duration-200 ease-out text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-neutral-800"
               style={rowStyle}
               onClick={() => router.push(`/leads/${lead.id}`)}
             >
@@ -262,21 +277,22 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
               <td style={cellStyle}>{lead.email ?? "—"}</td>
               <td style={cellStyle}>{lead.phone ?? "—"}</td>
               <td style={cellStyle}>{displayBudgetText(lead.budget)}</td>
-              <td style={cellStyle}>{lead.timeline ?? "—"}</td>
+              <td style={cellStyle}>{getDisplayTimeline(lead)}</td>
               <td style={cellStyle}>
                 <LeadScoreBadge
-                  score={lead.score}
-                  confidenceScore={lead.score_breakdown?.dataConfidence}
+                  aiScore={typeof lead.ai_score === "number" ? lead.ai_score : null}
+                  confidenceScore={
+                    typeof lead.ai_confidence === "number" ? lead.ai_confidence * 10 : undefined
+                  }
                 />
               </td>
               <td style={cellStyle}>
                 <LeadScoreDetails
-                  breakdown={lead.score_breakdown}
-                  explanation={lead.score_explanation}
+                  aiScoreBreakdown={lead.ai_score_breakdown ?? null}
+                  aiSummary={lead.ai_summary ?? null}
                   compact
                 />
               </td>
-              <td style={cellStyle}>{getNotesPreview(lead.notes)}</td>
               <td style={cellStyle}>
                 {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : "—"}
               </td>
@@ -285,7 +301,7 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
 
           {rows.length === 0 && (
             <tr>
-              <td colSpan={10} style={{ ...cellStyle, textAlign: "center", color: "#6b7280", padding: "24px" }}>
+              <td colSpan={9} style={{ ...cellStyle, textAlign: "center", padding: "24px" }} className="text-slate-500 dark:text-slate-400">
                 No leads found.
               </td>
             </tr>
@@ -294,13 +310,13 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
       </table>
 
       <div
+        className="text-slate-500 dark:text-slate-400"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           marginTop: "16px",
           fontSize: "13px",
-          color: "#6b7280",
         }}
       >
         <span>
@@ -311,10 +327,10 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
             type="button"
             onClick={goToPreviousPage}
             disabled={page <= 1}
-            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
+            className={`rounded-lg px-2.5 py-1.5 text-[13px] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
               page <= 1
-                ? "cursor-default border border-gray-200 bg-gray-50 text-gray-400"
-                : "cursor-pointer border border-[#1AB523] bg-white text-[#1AB523] hover:bg-[#1AB523]/10"
+                ? "cursor-default border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-slate-400"
+                : "cursor-pointer border border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-green-600 hover:text-white"
             }`}
           >
             Previous
@@ -323,25 +339,26 @@ export function LeadTableFull({ leads }: LeadTableFullProps) {
             type="button"
             onClick={goToNextPage}
             disabled={page >= totalPages}
-            className={`rounded-full px-2.5 py-1.5 text-[13px] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
+            className={`rounded-lg px-2.5 py-1.5 text-[13px] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
               page >= totalPages
-                ? "cursor-default border border-gray-200 bg-gray-50 text-gray-400"
-                : "cursor-pointer border border-[#1AB523] bg-white text-[#1AB523] hover:bg-[#1AB523]/10"
+                ? "cursor-default border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-slate-400"
+                : "cursor-pointer border border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-green-600 hover:text-white"
             }`}
           >
             Next
           </button>
         </div>
       </div>
-    </div>
+        </div>
+      )}
+    </CSVUploader>
   );
 }
 
 const headerCellStyle: React.CSSProperties = {
-  borderBottom: "1px solid #eee",
+  borderBottom: "1px solid var(--border)",
   padding: "12px",
   textAlign: "left",
-  color: "#6b7280",
   fontSize: "12px",
   textTransform: "uppercase",
   letterSpacing: "0.04em",
@@ -354,7 +371,6 @@ const headerButtonStyle: React.CSSProperties = {
   margin: 0,
   fontSize: "14px",
   fontWeight: 600,
-  color: "#111827",
   cursor: "pointer",
 };
 
@@ -363,14 +379,12 @@ const titleCaseHeaderCellStyle: React.CSSProperties = {
   textTransform: "none",
   letterSpacing: "normal",
   fontSize: "14px",
-  color: "#111827",
 };
 
 const cellStyle: React.CSSProperties = {
-  borderBottom: "1px solid #eee",
+  borderBottom: "1px solid var(--border)",
   padding: "12px",
   textAlign: "left",
-  color: "#222",
   fontSize: "14px",
 };
 
@@ -379,10 +393,21 @@ const rowStyle: React.CSSProperties = {
   transition: "background-color 0.12s ease",
 } as React.CSSProperties;
 
-function getNotesPreview(notes: string | null) {
-  if (!notes) {
-    return "—";
+function getDisplayTimeline(lead: Lead): string {
+  const direct = lead.timeline?.trim();
+  if (direct) return direct;
+
+  const signals = lead.ai_signals;
+  if (signals && typeof signals === "object" && !Array.isArray(signals)) {
+    const rec = signals as Record<string, unknown>;
+    const structured = rec.structured_extraction;
+    const bucket =
+      structured && typeof structured === "object" && !Array.isArray(structured)
+        ? (structured as Record<string, unknown>)
+        : rec;
+    const t = bucket.timeline;
+    if (typeof t === "string" && t.trim()) return t.trim();
   }
 
-  return notes.length > 88 ? `${notes.slice(0, 88).trim()}...` : notes;
+  return "—";
 }

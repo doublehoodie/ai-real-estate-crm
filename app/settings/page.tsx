@@ -1,17 +1,17 @@
-import { Sidebar } from "@/components/Sidebar";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { SettingsIntegrationsCard } from "@/components/settings/SettingsIntegrationsCard";
+import { SettingsThemeCard } from "@/components/settings/SettingsThemeCard";
 
 export default function SettingsPage() {
   return (
-    <main className="flex min-h-screen bg-[#f3f4f6]">
-      <Sidebar active="settings" />
-
-      <section style={{ flex: 1, padding: "32px" }}>
-        <h1 className="mb-2 text-gray-900">Settings</h1>
-        <p className="text-gray-500">
-          Account and workspace settings will live here.
-        </p>
-      </section>
-    </main>
+    <AppLayout active="settings" title="Settings" description="Manage workspace preferences.">
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur-md">
+          <SettingsThemeCard />
+        </div>
+        <SettingsIntegrationsCard />
+      </div>
+    </AppLayout>
   );
 }
 

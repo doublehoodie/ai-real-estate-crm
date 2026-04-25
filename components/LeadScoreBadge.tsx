@@ -1,61 +1,31 @@
-import { getConfidenceLabel, getScoreBand } from "@/lib/scoring";
+import { getConfidenceLabel } from "@/lib/scoring";
+import { scoreColorsFromAiScore } from "@/lib/ui/scoreColors";
 
 type LeadScoreBadgeProps = {
-  score: number | null;
+  aiScore: number | null;
   confidenceScore?: number | null;
+  /** When false, hides the confidence line (e.g. when confidence is shown in its own column). */
+  showConfidenceLine?: boolean;
 };
 
-export function LeadScoreBadge({ score, confidenceScore }: LeadScoreBadgeProps) {
-  const band = getScoreBand(score);
+export function LeadScoreBadge({ aiScore, confidenceScore, showConfidenceLine = true }: LeadScoreBadgeProps) {
+  const colors = scoreColorsFromAiScore(aiScore);
   const confidence = getConfidenceLabel(confidenceScore);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-start" }}>
       <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "8px 10px",
-          borderRadius: "999px",
-          background: getBandBackground(band.label),
-          color: getBandColor(band.label),
-          fontWeight: 700,
-          fontSize: "13px",
-          lineHeight: 1,
-        }}
+        className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-2 text-[13px] font-bold leading-none ${colors.pillClass}`}
       >
-        <span>{score ?? "—"}</span>
-        <span style={{ opacity: 0.8 }}>{band.label}</span>
+        <span>{aiScore ?? "—"}</span>
+        <span style={{ opacity: 0.8 }}>{colors.label}</span>
       </span>
 
-      <span style={{ fontSize: "12px", color: "#6b7280", textTransform: "capitalize" }}>
-        Confidence: {confidence}
-      </span>
+      {showConfidenceLine ? (
+        <span className="text-[12px] capitalize text-slate-500 dark:text-slate-400">
+          Confidence: {confidence}
+        </span>
+      ) : null}
     </div>
   );
-}
-
-function getBandBackground(label: string) {
-  if (label === "Hot") {
-    return "var(--danger-soft)";
-  }
-
-  if (label === "Warm") {
-    return "var(--warning-soft)";
-  }
-
-  return "#e5eefb";
-}
-
-function getBandColor(label: string) {
-  if (label === "Hot") {
-    return "var(--danger-text)";
-  }
-
-  if (label === "Warm") {
-    return "var(--warning-text)";
-  }
-
-  return "#1d4ed8";
 }

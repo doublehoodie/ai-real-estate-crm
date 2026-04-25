@@ -1,12 +1,17 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Lead } from "@/types/lead";
-import { Sidebar } from "@/components/Sidebar";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCards } from "@/components/StatCards";
 import { LeadTable } from "@/components/LeadTable";
 import { AddLeadForm } from "@/components/AddLeadForm";
 import { resolveLeadScoring } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
+
+const DASHBOARD_LEADS_SELECT =
+  "id, name, email, phone, budget, timeline, status, notes, created_at, " +
+  "ai_score, ai_score_breakdown, ai_confidence, ai_summary, ai_followup, " +
+  "ai_processed, ai_intent_level, ai_signals, ai_next_action, has_contradictions, is_favorite";
 
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
@@ -25,7 +30,7 @@ export default async function Home() {
   if (user?.id) {
     const { data, error } = await supabase
       .from("leads")
-      .select("*")
+      .select(DASHBOARD_LEADS_SELECT)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -34,28 +39,17 @@ export default async function Home() {
     if (error) {
       console.error(error);
     } else {
-      leads = ((data ?? []).map((lead) => resolveLeadScoring(lead as Lead))) as Lead[];
+      leads = ((data ?? []).map((lead) => resolveLeadScoring(lead as unknown as Lead))) as Lead[];
     }
   } else {
     console.log("LEADS DATA (dashboard, no user):", []);
   }
 
   return (
-    <main className="flex min-h-screen bg-[#f3f4f6]">
-      <Sidebar active="dashboard" />
-
-      <section style={{ flex: 1, padding: "32px" }}>
-        <h1 className="mb-2 bg-gradient-to-r from-[#1AB523] to-black bg-clip-text text-4xl font-semibold tracking-tight text-transparent transition-all duration-500 hover:bg-[linear-gradient(to_right,#1AB523_40%,black_100%)]">
-          Welcome!
-        </h1>
-        <p className="mb-6 text-gray-500">Agent dashboard</p>
-
-        <StatCards leads={leads} />
-
-        <AddLeadForm />
-
-        <LeadTable leads={leads} />
-      </section>
-    </main>
+    <AppLayout active="dashboard" title="Dashboard" description="Agent dashboard">
+      <StatCards leads={leads} />
+      <AddLeadForm />
+      <LeadTable leads={leads} />
+    </AppLayout>
   );
 }

@@ -11,7 +11,7 @@ import {
   scoreLead,
   stripScoringPersistenceFields,
 } from "@/lib/scoring";
-import { primaryButton } from "@/lib/ui";
+import { inputFieldClass, primaryButton } from "@/lib/ui";
 
 type FormState = {
   name: string;
@@ -90,8 +90,8 @@ export function AddLeadForm() {
       if (insertError) {
         const message = insertError.message ?? "";
         const scoringColumnMissing =
-          isMissingColumnError(message, "score_breakdown") ||
-          isMissingColumnError(message, "score_explanation") ||
+          isMissingColumnError(message, "ai_score_breakdown") ||
+          isMissingColumnError(message, "ai_score") ||
           isMissingColumnError(message, "updated_at");
         const budgetValueColumnMissing = isMissingColumnError(message, "budget_value");
 
@@ -121,6 +121,23 @@ export function AddLeadForm() {
         }
       }
 
+      const aiInput = [form.notes, form.timeline, form.budget, form.status]
+        .filter((v): v is string => typeof v === "string")
+        .join("\n")
+        .trim();
+      if (aiInput.length > 20) {
+        try {
+          await fetch("/api/ai/process-lead", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lead_id: newId, email_body: aiInput }),
+          });
+        } catch (e) {
+          console.error("[AddLeadForm] AI scoring trigger:", e);
+        }
+      }
+
       setForm(initialState);
       router.refresh();
     } catch (err) {
@@ -138,20 +155,20 @@ export function AddLeadForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] items-end gap-x-4 gap-y-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+      className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] items-end gap-x-4 gap-y-3 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur transition-all duration-200 ease-out hover:scale-[1.01]"
     >
       <div className="col-span-full mb-1">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="m-0 text-gray-900">Add Lead</h2>
-            <p className="mt-1 text-[13px] text-gray-500">
+            <h2 className="m-0 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Add Lead</h2>
+            <p className="mt-1 text-[13px] text-slate-700 dark:text-slate-300">
               Manually create a new lead. Scoring is calculated automatically from structured fields and notes.
             </p>
           </div>
-          <div className="min-w-[180px] rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
-            <div className="mb-1 text-xs text-gray-500">Score preview</div>
-            <div className="text-2xl font-bold text-gray-900">{scorePreview.score}</div>
-            <div className="text-xs capitalize text-gray-500">{scorePreview.confidence} confidence</div>
+          <div className="min-w-[180px] rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3.5 py-3">
+            <div className="mb-1 text-xs text-slate-700 dark:text-slate-300">Score preview</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{scorePreview.score}</div>
+            <div className="text-xs capitalize text-slate-700 dark:text-slate-300">{scorePreview.confidence} confidence</div>
           </div>
         </div>
       </div>
@@ -162,7 +179,7 @@ export function AddLeadForm() {
           value={form.name}
           onChange={(e) => handleChange("name", e.target.value)}
           placeholder="Jane Doe"
-          style={inputStyle}
+          className={inputFieldClass}
         />
       </Field>
 
@@ -172,7 +189,7 @@ export function AddLeadForm() {
           value={form.email}
           onChange={(e) => handleChange("email", e.target.value)}
           placeholder="jane@example.com"
-          style={inputStyle}
+          className={inputFieldClass}
         />
       </Field>
 
@@ -182,7 +199,7 @@ export function AddLeadForm() {
           value={form.phone}
           onChange={(e) => handleChange("phone", e.target.value)}
           placeholder="(555) 123-4567"
-          style={inputStyle}
+          className={inputFieldClass}
         />
       </Field>
 
@@ -192,7 +209,7 @@ export function AddLeadForm() {
           value={form.budget}
           onChange={(e) => handleChange("budget", e.target.value)}
           placeholder="$800,000"
-          style={inputStyle}
+          className={inputFieldClass}
         />
       </Field>
 
@@ -202,7 +219,7 @@ export function AddLeadForm() {
           value={form.timeline}
           onChange={(e) => handleChange("timeline", e.target.value)}
           placeholder="3–6 months"
-          style={inputStyle}
+          className={inputFieldClass}
         />
       </Field>
 
@@ -211,11 +228,7 @@ export function AddLeadForm() {
           value={form.notes}
           onChange={(e) => handleChange("notes", e.target.value)}
           placeholder="Context, preferences, or any notes about this lead."
-          style={{
-            ...inputStyle,
-            minHeight: "72px",
-            resize: "vertical",
-          }}
+          className={`${inputFieldClass} min-h-[72px] resize-y`}
         />
       </Field>
 
@@ -223,10 +236,7 @@ export function AddLeadForm() {
         <select
           value={form.status}
           onChange={(e) => handleChange("status", e.target.value)}
-          style={{
-            ...inputStyle,
-            paddingRight: "32px",
-          }}
+          className={`${inputFieldClass} pr-8`}
         >
           <option value="New">New</option>
           <option value="Hot">Hot</option>
@@ -237,12 +247,12 @@ export function AddLeadForm() {
         </select>
       </Field>
 
-      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
         <input
           type="checkbox"
           checked={form.is_favorite}
           onChange={(e) => handleChange("is_favorite", e.target.checked)}
-          className="size-4 rounded border-slate-300 text-[#1AB523] focus:ring-2 focus:ring-[#1AB523]"
+          className="size-4 rounded border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-emerald-500 focus:ring-2 focus:ring-green-500"
         />
         <span>Mark as favorite</span>
       </label>
@@ -251,11 +261,11 @@ export function AddLeadForm() {
         <button
           type="submit"
           disabled={submitting}
-          className={`self-start whitespace-nowrap rounded-full border-0 px-4 py-2.5 text-sm font-semibold ${primaryButton}`}
+          className={`self-start whitespace-nowrap text-sm ${primaryButton}`}
         >
           {submitting ? "Saving..." : "Add Lead"}
         </button>
-        {error && <span className="text-xs text-red-700">{error}</span>}
+        {error && <span className="text-xs text-red-600 dark:text-red-300">{error}</span>}
       </div>
     </form>
   );
@@ -268,16 +278,10 @@ type FieldProps = {
 
 function Field({ label, children }: FieldProps) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: "#374151" }}>
+    <label className="flex flex-col gap-1 text-[13px] text-slate-700 dark:text-slate-300">
       <span>{label}</span>
       {children}
     </label>
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: "8px",
-  border: "1px solid #e5e7eb",
-  fontSize: "14px",
-};

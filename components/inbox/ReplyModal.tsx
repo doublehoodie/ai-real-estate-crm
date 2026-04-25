@@ -63,96 +63,46 @@ export function ReplyModal({
     <div
       role="dialog"
       aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 50,
-        padding: "16px",
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
     >
-      <div
-        style={{
-          background: "white",
-          borderRadius: "14px",
-          maxWidth: "560px",
-          width: "100%",
-          padding: "20px",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
-        }}
-      >
+      <div className="w-full max-w-[560px] rounded-2xl border border-white/10 bg-zinc-900/95 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.55)]">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h2 className="m-0 text-lg text-gray-900">Reply</h2>
+          <h2 className="m-0 text-lg font-semibold tracking-tight text-zinc-100">Reply</h2>
           <button
             type="button"
             onClick={onClose}
             title="Close"
             aria-label="Close"
-            style={{
-              padding: "8px",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              background: "white",
-              cursor: "pointer",
-              display: "inline-flex",
-            }}
+            className="inline-flex cursor-pointer rounded-lg border border-white/10 bg-zinc-950 p-2 transition-colors hover:bg-zinc-800"
           >
-            <X className="h-4 w-4" strokeWidth={2} color="#374151" />
+            <X className="h-4 w-4 text-zinc-300" strokeWidth={2} />
           </button>
         </div>
 
-        <label style={{ display: "block", fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>To</label>
+        <label style={{ display: "block", fontSize: "12px", color: "#a1a1aa", marginBottom: "4px" }}>To</label>
         <input
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            marginBottom: "10px",
-            padding: "8px 10px",
-            borderRadius: "8px",
-            border: "1px solid #e5e7eb",
-            fontSize: "14px",
-          }}
+          className="mb-2.5 w-full rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
 
-        <label style={{ display: "block", fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Subject</label>
+        <label style={{ display: "block", fontSize: "12px", color: "#a1a1aa", marginBottom: "4px" }}>Subject</label>
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            marginBottom: "10px",
-            padding: "8px 10px",
-            borderRadius: "8px",
-            border: "1px solid #e5e7eb",
-            fontSize: "14px",
-          }}
+          className="mb-2.5 w-full rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
 
-        <label style={{ display: "block", fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Message</label>
+        <label style={{ display: "block", fontSize: "12px", color: "#a1a1aa", marginBottom: "4px" }}>Message</label>
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={8}
           placeholder="Thread context is preserved when you send in the same Gmail thread."
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            padding: "10px",
-            borderRadius: "10px",
-            border: "1px solid #e5e7eb",
-            fontSize: "14px",
-            fontFamily: "inherit",
-            marginBottom: "12px",
-          }}
+          className="mb-3 w-full rounded-xl border border-white/10 bg-zinc-950 p-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
 
-        {error && <p style={{ color: "#b91c1c", fontSize: "13px", marginTop: 0 }}>{error}</p>}
+        {error && <p style={{ color: "#fca5a5", fontSize: "13px", marginTop: 0 }}>{error}</p>}
 
         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
           <button
@@ -161,7 +111,7 @@ export function ReplyModal({
             title="Send"
             aria-label="Send"
             onClick={() => void handleSend()}
-            className={`inline-flex items-center justify-center rounded-[10px] border-0 px-3 py-2 ${primaryButton}`}
+            className={`inline-flex items-center justify-center px-3 py-2 ${primaryButton}`}
           >
             <Send className="h-4 w-4" aria-hidden />
           </button>

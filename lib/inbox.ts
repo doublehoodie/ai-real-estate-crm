@@ -1,6 +1,31 @@
 import type { InboxEmailRow, InboxThreadMeta, InboxThreadNote, InboxThreadSummary } from "@/types/inbox";
 
 /**
+ * When a Gmail thread has multiple messages, they may reference different `lead_id`s over time.
+ * Prefer showing AI from a lead that actually has AI data; otherwise use the newest linked lead.
+ */
+export function pickLeadForThread(messages: InboxEmailRow[]): InboxThreadSummary["lead"] {
+  const sorted = [...messages].sort(
+    (x, y) => new Date(y.received_at).getTime() - new Date(x.received_at).getTime(),
+  );
+  const candidates: NonNullable<InboxEmailRow["lead"]>[] = [];
+  const seen = new Set<string>();
+  for (const m of sorted) {
+    if (m.lead_id && m.lead && !seen.has(m.lead.id)) {
+      seen.add(m.lead.id);
+      candidates.push(m.lead);
+    }
+  }
+  if (candidates.length === 0) return null;
+  const preferred = candidates.find(
+    (l) =>
+      l.ai_processed === true ||
+      (typeof l.ai_summary === "string" && l.ai_summary.trim().length > 0),
+  );
+  return preferred ?? candidates[0];
+}
+
+/**
  * Groups flat email rows by Gmail thread_id and computes summary fields for the UI.
  */
 export function groupEmailsIntoThreads(
@@ -28,14 +53,7 @@ export function groupEmailsIntoThreads(
       sorted.reduce((best, m) => (m.subject && m.subject !== "(No subject)" ? m.subject : best), latest.subject) ||
       "(No subject)";
 
-    const leadRow = sorted.find((m) => m.lead_id && m.lead);
-    const lead = leadRow?.lead
-      ? {
-          id: leadRow.lead.id,
-          name: leadRow.lead.name,
-          email: leadRow.lead.email,
-        }
-      : null;
+    const lead = pickLeadForThread(sorted);
 
     const hasUnlinkedInbound = sorted.some(
       (m) => m.direction === "inbound" && !m.lead_id,
@@ -127,4 +145,11 @@ export function pickReplyTarget(
     return { to: raw, subject: last.subject || "(No subject)" };
   }
   return null;
+}
+
+/** Subject line for a reply: `Re: …` without duplicating an existing `Re:` prefix. */
+export function buildReplySubject(threadSubject: string): string {
+  const t = threadSubject.replace(/\s+/g, " ").trim() || "(No subject)";
+  if (/^re:\s*/i.test(t)) return t;
+  return `Re: ${t}`;
 }

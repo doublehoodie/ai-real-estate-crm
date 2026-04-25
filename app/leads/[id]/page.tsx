@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Lead } from "@/types/lead";
-import { Sidebar } from "@/components/Sidebar";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { displayBudgetText, formatBudgetValueUsd } from "@/lib/format";
 import { resolveLeadScoring } from "@/lib/scoring";
-import { LeadScoreBadge } from "@/components/LeadScoreBadge";
-import { LeadScoreDetails } from "@/components/LeadScoreDetails";
+import { AIExplainabilityPanel } from "@/components/AIExplainabilityPanel";
 import { EditLeadForm } from "@/components/EditLeadForm";
 import { LeadDetailFavorite } from "@/components/LeadDetailFavorite";
+import { LeadScheduleButton } from "@/components/LeadScheduleButton";
+import { LeadEventsSection } from "@/components/LeadEventsSection";
+import { LeadEventsHistorySection } from "@/components/LeadEventsHistorySection";
 
 type LeadDetailPageProps = {
   params: Promise<{
@@ -51,58 +53,26 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     .order("created_at", { ascending: false });
 
   return (
-    <main className="flex min-h-screen bg-[#f3f4f6]">
-      <Sidebar active="leads" />
-
-      <section style={{ flex: 1, padding: "32px" }}>
-        <div style={{ marginBottom: "16px" }}>
+    <AppLayout active="leads" title={lead.name || "Untitled lead"} description="Lead details and activity overview">
+        <div className="mb-4">
           <Link
             href="/leads"
-            style={{
-              display: "inline-flex",
-              padding: "6px 12px",
-              borderRadius: "999px",
-              border: "1px solid #e5e7eb",
-              background: "white",
-              fontSize: "13px",
-            }}
+            className="inline-flex rounded-lg border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 px-3 py-1.5 text-[13px] text-slate-900 dark:text-white transition-all duration-200 hover:bg-slate-200 dark:hover:bg-neutral-700"
           >
             ← Back to leads
           </Link>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            flexWrap: "wrap",
-            marginBottom: "4px",
-          }}
-        >
+        <div className="mb-1 flex flex-wrap items-center gap-2.5">
           <LeadDetailFavorite leadId={lead.id} initialFavorite={lead.is_favorite === true} />
-          <h1 style={{ margin: 0, color: "#111" }}>{lead.name || "Untitled lead"}</h1>
+          <LeadScheduleButton lead={lead} />
+          <h2 className="m-0 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{lead.name || "Untitled lead"}</h2>
         </div>
-        <p style={{ marginTop: 0, marginBottom: "24px", color: "#6b7280", fontSize: "14px" }}>
-          Lead details and activity overview
-        </p>
+        <p className="mb-6 mt-0 text-sm text-slate-600 dark:text-slate-400">Lead details and activity overview</p>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.2fr)",
-            gap: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "12px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            }}
-          >
-            <h2 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px", color: "#111" }}>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)]">
+          <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur-md">
+            <h2 className="mb-4 mt-0 text-base font-semibold tracking-tight text-slate-900 dark:text-white">
               Contact information
             </h2>
 
@@ -111,34 +81,19 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
             <DetailRow label="Phone" value={lead.phone} />
           </div>
 
-          <div
-            style={{
-              background: "white",
-              borderRadius: "12px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            }}
-          >
-            <h2 style={{ marginTop: 0, marginBottom: "16px", fontSize: "16px", color: "#111" }}>
+          <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur-md">
+            <h2 className="mb-4 mt-0 text-base font-semibold tracking-tight text-slate-900 dark:text-white">
               Buying profile
             </h2>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-                padding: "8px 0",
-                borderBottom: "1px solid #f3f4f6",
-              }}
-            >
-              <span style={{ fontSize: "13px", color: "#6b7280" }}>Budget</span>
-              <div style={{ textAlign: "right", maxWidth: "65%" }}>
-                <span style={{ fontSize: "14px", color: "#111", fontWeight: 500, whiteSpace: "pre-wrap" }}>
+            <div className="flex items-baseline justify-between border-b border-slate-200 dark:border-neutral-800 py-2">
+              <span className="text-[13px] text-slate-600 dark:text-slate-400">Budget</span>
+              <div className="max-w-[65%] text-right">
+                <span className="whitespace-pre-wrap text-[14px] font-medium text-slate-900 dark:text-white">
                   {displayBudgetText(lead.budget)}
                 </span>
                 {lead.budget_value != null && (
-                  <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
+                  <div className="mt-1 text-[12px] text-slate-600 dark:text-slate-400">
                     Parsed estimate: {formatBudgetValueUsd(lead.budget_value)}
                   </div>
                 )}
@@ -150,51 +105,23 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
               label="Created"
               value={lead.created_at ? new Date(lead.created_at).toLocaleString() : null}
             />
-            <div style={{ paddingTop: "16px" }}>
-              <div style={{ fontSize: "13px", color: "#6b7280", marginBottom: "8px" }}>Lead score</div>
-              <LeadScoreBadge
-                score={lead.score}
-                confidenceScore={lead.score_breakdown?.dataConfidence}
-              />
-            </div>
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: "20px",
-            background: "white",
-            borderRadius: "12px",
-            padding: "20px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: "12px", fontSize: "16px", color: "#111" }}>
-            Scoring breakdown
-          </h2>
-          <LeadScoreDetails
-            breakdown={lead.score_breakdown}
-            explanation={lead.score_explanation}
-          />
+        <div className="mt-5 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur-md">
+          <h2 className="mb-3 mt-0 text-base font-semibold tracking-tight text-slate-900 dark:text-white">Score Insights</h2>
+          <AIExplainabilityPanel lead={lead} />
         </div>
 
-        <div
-          style={{
-            marginTop: "20px",
-            background: "white",
-            borderRadius: "12px",
-            padding: "20px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: "12px", fontSize: "16px", color: "#111" }}>
+        <div className="mt-5 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur-md">
+          <h2 className="mb-3 mt-0 text-base font-semibold tracking-tight text-slate-900 dark:text-white">
             Inbox &amp; activity notes
           </h2>
           {inboxNotes && inboxNotes.length > 0 ? (
-            <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "14px", lineHeight: 1.5 }}>
+            <ul style={{ margin: 0, paddingLeft: "18px", color: "rgb(51 65 85)", fontSize: "14px", lineHeight: 1.5 }}>
               {inboxNotes.map((n) => (
                 <li key={n.id} style={{ marginBottom: "10px" }}>
-                  <span style={{ color: "#6b7280", fontSize: "12px" }}>
+                  <span style={{ color: "rgb(100 116 139)", fontSize: "12px" }}>
                     {n.thread_id ? `Thread ${n.thread_id.slice(0, 8)}… · ` : "Profile · "}
                     {new Date(n.created_at).toLocaleString()}
                   </span>
@@ -203,17 +130,20 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
               ))}
             </ul>
           ) : (
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+            <p style={{ margin: 0, color: "rgb(100 116 139)", fontSize: "14px" }}>
               No inbox notes yet. Add notes from the Inbox or edit profile notes below.
             </p>
           )}
         </div>
 
-        <div style={{ marginTop: "20px" }}>
+        <LeadEventsSection leadId={lead.id} />
+
+        <div className="mt-5">
           <EditLeadForm lead={lead} />
         </div>
-      </section>
-    </main>
+
+        <LeadEventsHistorySection leadId={lead.id} />
+    </AppLayout>
   );
 }
 
@@ -224,17 +154,9 @@ type DetailRowProps = {
 
 function DetailRow({ label, value }: DetailRowProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        padding: "8px 0",
-        borderBottom: "1px solid #f3f4f6",
-      }}
-    >
-      <span style={{ fontSize: "13px", color: "#6b7280" }}>{label}</span>
-      <span style={{ fontSize: "14px", color: "#111", fontWeight: 500 }}>
+    <div className="flex items-baseline justify-between border-b border-slate-200 dark:border-neutral-800 py-2">
+      <span className="text-[13px] text-slate-600 dark:text-slate-400">{label}</span>
+      <span className="text-[14px] font-medium text-slate-900 dark:text-white">
         {value ?? "—"}
       </span>
     </div>

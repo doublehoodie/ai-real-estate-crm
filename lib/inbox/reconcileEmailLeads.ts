@@ -9,6 +9,9 @@ export async function reconcileEmailsToLeads(
   userId: string,
 ): Promise<void> {
   const { error } = await supabase.rpc("reconcile_emails_to_leads", { p_user_id: userId });
+  if (!error) {
+    console.log("[reconcileEmailsToLeads] RPC ok", { userId });
+  }
   if (error) {
     const msg = error.message?.toLowerCase() ?? "";
     const missing =

@@ -1,27 +1,38 @@
 "use client";
 
-import type { LeadScoreBreakdown } from "@/types/lead";
+type AiScoreBreakdown = {
+  budget: number;
+  timeline: number;
+  intent: number;
+  urgency: number;
+};
 
 type LeadScoreDetailsProps = {
-  breakdown: LeadScoreBreakdown | null;
-  explanation: string[] | null;
+  aiScoreBreakdown?: AiScoreBreakdown | null;
+  /** Short context for AI-scored leads (e.g. ai_summary) */
+  aiSummary?: string | null;
   compact?: boolean;
 };
 
-export function LeadScoreDetails({
-  breakdown,
-  explanation,
-  compact = false,
-}: LeadScoreDetailsProps) {
-  if (!breakdown || !explanation || explanation.length === 0) {
-    return <span style={{ color: "#6b7280", fontSize: "13px" }}>Score details unavailable.</span>;
+export function LeadScoreDetails({ aiScoreBreakdown, aiSummary, compact = false }: LeadScoreDetailsProps) {
+  const hasAi = Boolean(
+    aiScoreBreakdown &&
+      typeof aiScoreBreakdown.budget === "number" &&
+      typeof aiScoreBreakdown.timeline === "number" &&
+      typeof aiScoreBreakdown.intent === "number" &&
+      typeof aiScoreBreakdown.urgency === "number",
+  );
+
+  if (!hasAi || !aiScoreBreakdown) {
+    return <span style={{ color: "#9ca3af", fontSize: "13px" }}>Score details unavailable.</span>;
   }
 
+  const summaryLine = aiSummary?.trim();
   return (
     <details onClick={(event) => event.stopPropagation()}>
       <summary
         onClick={(event) => event.stopPropagation()}
-        style={{ cursor: "pointer", color: "#1AB523", fontSize: "13px", fontWeight: 600 }}
+        style={{ cursor: "pointer", color: "#4ade80", fontSize: "13px", fontWeight: 600 }}
       >
         Why this score
       </summary>
@@ -30,22 +41,18 @@ export function LeadScoreDetails({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(160px, 1fr))",
+            gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(140px, 1fr))",
             gap: "8px",
           }}
         >
-          <ScoreBreakdownItem label="Financial" value={`${breakdown.financialReadiness}/30`} />
-          <ScoreBreakdownItem label="Urgency" value={`${breakdown.urgency}/25`} />
-          <ScoreBreakdownItem label="Intent" value={`${breakdown.behavioralIntent}/20`} />
-          <ScoreBreakdownItem label="Fit" value={`${breakdown.fitReadiness}/15`} />
-          <ScoreBreakdownItem label="Confidence" value={`${breakdown.dataConfidence}/10`} />
+          <ScoreBreakdownItem label="Budget" value={`+${aiScoreBreakdown.budget}`} />
+          <ScoreBreakdownItem label="Timeline" value={`+${aiScoreBreakdown.timeline}`} />
+          <ScoreBreakdownItem label="Intent" value={`+${aiScoreBreakdown.intent}`} />
+          <ScoreBreakdownItem label="Urgency" value={`+${aiScoreBreakdown.urgency}`} />
         </div>
-
-        <ul style={{ margin: 0, paddingLeft: "18px", color: "#374151", fontSize: "13px", lineHeight: 1.5 }}>
-          {(compact ? [] : explanation).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+        {!compact && summaryLine ? (
+          <p style={{ margin: 0, color: "#9ca3af", fontSize: "13px", lineHeight: 1.5 }}>{summaryLine}</p>
+        ) : null}
       </div>
     </details>
   );
@@ -55,14 +62,14 @@ function ScoreBreakdownItem({ label, value }: { label: string; value: string }) 
   return (
     <div
       style={{
-        border: "1px solid #e5e7eb",
+        border: "1px solid rgba(255,255,255,0.1)",
         borderRadius: "10px",
         padding: "10px 12px",
-        background: "#f8fafc",
+        background: "rgba(38,38,38,0.7)",
       }}
     >
-      <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>{label}</div>
-      <div style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>{value}</div>
+      <div style={{ fontSize: "12px", color: "#d1d5db", marginBottom: "4px" }}>{label}</div>
+      <div style={{ fontSize: "14px", fontWeight: 700, color: "#9ca3af" }}>{value}</div>
     </div>
   );
 }

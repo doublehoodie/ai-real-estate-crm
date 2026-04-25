@@ -13,7 +13,22 @@ export type InboxEmailRow = {
   lead_id: string | null;
   provider: string;
   direction: EmailDirection | null;
-  lead?: Pick<Lead, "id" | "name" | "email"> | null;
+  lead?: Pick<
+    Lead,
+    | "id"
+    | "name"
+    | "email"
+    | "ai_processed"
+    | "ai_summary"
+    | "ai_confidence"
+    | "ai_intent_level"
+    | "ai_score"
+    | "ai_score_breakdown"
+    | "ai_next_action"
+    | "ai_followup"
+    | "ai_signals"
+    | "has_contradictions"
+  > | null;
 };
 
 export type InboxThreadMeta = {
@@ -36,7 +51,22 @@ export type InboxThreadSummary = {
   latest_snippet: string;
   latest_at: string;
   message_count: number;
-  lead: { id: string; name: string | null; email: string | null } | null;
+  lead: Pick<
+    Lead,
+    | "id"
+    | "name"
+    | "email"
+    | "ai_processed"
+    | "ai_summary"
+    | "ai_confidence"
+    | "ai_intent_level"
+    | "ai_score"
+    | "ai_score_breakdown"
+    | "ai_next_action"
+    | "ai_followup"
+    | "ai_signals"
+    | "has_contradictions"
+  > | null;
   needs_attention: boolean;
   is_favorite: boolean;
   needs_action: boolean;

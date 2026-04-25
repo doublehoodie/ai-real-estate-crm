@@ -6,29 +6,35 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "action-plan-smoke": "tsx scripts/action-plan-smoke.ts",
+    "execute-plan-smoke": "tsx scripts/execute-plan-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.99.1",
     "@tailwindcss/typography": "^0.5.19",
     "dompurify": "^3.3.3",
+    "framer-motion": "^12.38.0",
     "geist": "^1.7.0",
     "googleapis": "^171.4.0",
     "isomorphic-dompurify": "^3.8.0",
     "lucide-react": "^1.6.0",
     "next": "16.1.6",
+    "papaparse": "^5.5.3",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

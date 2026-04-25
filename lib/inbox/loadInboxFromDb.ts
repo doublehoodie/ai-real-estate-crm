@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { groupEmailsIntoThreads } from "@/lib/inbox";
 import { isUuid } from "@/lib/ids";
 import type { InboxEmailRow, InboxThreadMeta, InboxThreadNote, InboxThreadSummary } from "@/types/inbox";
+import type { Lead } from "@/types/lead";
 
 type DBEmailRow = {
   user_id: string;
@@ -81,11 +82,32 @@ export async function loadInboxThreadsForUser(
   const rows = emailRows ?? [];
   const leadIds = [...new Set(rows.map((r) => r.lead_id).filter(Boolean))].filter(isUuid);
 
-  const leadMap = new Map<string, { id: string; name: string | null; email: string | null }>();
+  const leadMap = new Map<
+    string,
+    Pick<
+      Lead,
+      | "id"
+      | "name"
+      | "email"
+      | "ai_processed"
+      | "ai_summary"
+      | "ai_confidence"
+      | "ai_intent_level"
+      | "ai_score"
+      | "ai_score_breakdown"
+      | "ai_next_action"
+      | "ai_followup"
+      | "ai_signals"
+      | "has_contradictions"
+    >
+  >();
   if (leadIds.length > 0) {
     const { data: leads, error: leadsError } = await supabase
       .from("leads")
-      .select("id, name, email")
+      .select(
+        "id, name, email, ai_processed, ai_summary, ai_confidence, ai_intent_level, ai_score, ai_score_breakdown, ai_next_action, ai_followup, ai_signals, has_contradictions",
+      )
+      .eq("user_id", userId)
       .in("id", leadIds);
 
     if (leadsError) {

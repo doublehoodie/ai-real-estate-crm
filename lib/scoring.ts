@@ -1,5 +1,6 @@
 import leadDictionary from "@/scoring/leadDictionary.js";
 import { coercePhoneFromApi } from "@/lib/phone";
+import { normalizeLeadCoreFields } from "@/lib/leadNormalization";
 import type { Lead, LeadScoreBreakdown, LeadScoreConfidence } from "@/types/lead";
 
 type ScoringCategoryKey =
@@ -349,11 +350,17 @@ type ScoreableLead = Partial<
     | "budget_value"
     | "timeline"
     | "notes"
-    | "score"
-    | "score_breakdown"
-    | "score_explanation"
+    | "ai_score"
+    | "ai_score_breakdown"
   >
 >;
+
+type AiScoreBreakdownLike = {
+  budget?: unknown;
+  timeline?: unknown;
+  intent?: unknown;
+  urgency?: unknown;
+} | null | undefined;
 
 export function extractSignalsFromNotes(
   notes: string | null | undefined,
@@ -651,46 +658,142 @@ export function scoreLead(lead: ScoreableLead & { createdAt?: string | null }): 
 }
 
 export function resolveLeadScoring(lead: Lead): Lead {
-  const base: Lead = {
+  const base: Lead = normalizeLeadCoreFields({
     ...lead,
     phone: coercePhoneFromApi(lead.phone),
-  };
+  });
 
-  if (base.score !== null && base.score_breakdown && base.score_explanation) {
-    return base;
+  const computedScore = computeAiScoreFromBreakdown(base.ai_score_breakdown);
+
+  if (computedScore !== null) {
+    const out: Lead = {
+      ...base,
+      ai_score: computedScore,
+    };
+    console.log("FINAL SCORE USED:", out.ai_score);
+    return out;
+  }
+
+  if (base.ai_processed === true) {
+    const out: Lead = {
+      ...base,
+      ai_score: 0,
+    };
+    console.log("FINAL SCORE USED:", out.ai_score);
+    return out;
+  }
+
+  if (typeof base.ai_score === "number" && Number.isFinite(base.ai_score)) {
+    const out: Lead = {
+      ...base,
+      ai_score: Math.round(base.ai_score),
+    };
+    console.log("FINAL SCORE USED:", out.ai_score);
+    return out;
   }
 
   const computed = scoreLead(base);
-
-  return {
+  const aiBreakdown = dictionaryBreakdownToAiScoreBreakdown(computed.breakdown, computed.score);
+  const out: Lead = {
     ...base,
-    score: computed.score,
-    score_breakdown: computed.breakdown,
-    score_explanation: computed.explanation,
+    ai_score: computed.score,
+    ai_score_breakdown: aiBreakdown,
   };
+  console.log("FINAL SCORE USED:", out.ai_score);
+  return out;
+}
+
+export function computeAiScoreFromBreakdown(breakdown: AiScoreBreakdownLike): number | null {
+  if (!breakdown || typeof breakdown !== "object" || Array.isArray(breakdown)) {
+    return null;
+  }
+
+  const budget = toFiniteNumberOrNull(breakdown.budget);
+  const timeline = toFiniteNumberOrNull(breakdown.timeline);
+  const intent = toFiniteNumberOrNull(breakdown.intent);
+  const urgency = toFiniteNumberOrNull(breakdown.urgency);
+
+  if (budget === null && timeline === null && intent === null && urgency === null) {
+    return null;
+  }
+
+  const computedScore = Math.round((budget ?? 0) + (timeline ?? 0) + (intent ?? 0) + (urgency ?? 0));
+  return clamp(computedScore, 0, 100);
+}
+
+/** Maps dictionary 5-axis breakdown into AI 4-field rubric; totals align to `finalScore` when possible. */
+export function dictionaryBreakdownToAiScoreBreakdown(
+  breakdown: LeadScoreBreakdown,
+  finalScore: number,
+): NonNullable<Lead["ai_score_breakdown"]> {
+  const target = clamp(Math.round(finalScore), 0, 100);
+  const w0 = Math.max(0, breakdown.financialReadiness);
+  const w1 = Math.max(0, breakdown.urgency);
+  const w2 = Math.max(0, breakdown.behavioralIntent);
+  const w3 = Math.max(0, breakdown.fitReadiness + breakdown.dataConfidence);
+  const wSum = w0 + w1 + w2 + w3;
+
+  if (wSum <= 0) {
+    const q = Math.floor(target / 4);
+    const rem = target - q * 4;
+    return {
+      budget: q + (rem > 0 ? 1 : 0),
+      timeline: q + (rem > 1 ? 1 : 0),
+      intent: q + (rem > 2 ? 1 : 0),
+      urgency: q,
+    };
+  }
+
+  let b = Math.round((target * w0) / wSum);
+  let t = Math.round((target * w1) / wSum);
+  let n = Math.round((target * w2) / wSum);
+  b = clamp(b, 0, 100);
+  t = clamp(t, 0, 100);
+  n = clamp(n, 0, 100);
+  let u = clamp(target - b - t - n, 0, 100);
+  let out: NonNullable<Lead["ai_score_breakdown"]> = { budget: b, timeline: t, intent: n, urgency: u };
+  let got = computeAiScoreFromBreakdown(out) ?? 0;
+  let drift = target - got;
+  out = { ...out, urgency: clamp(out.urgency + drift, 0, 100) };
+  got = computeAiScoreFromBreakdown(out) ?? 0;
+  drift = target - got;
+  if (drift !== 0) {
+    out = { ...out, intent: clamp(out.intent + drift, 0, 100) };
+  }
+  return out;
 }
 
 export function buildScoredLeadPayload(
   lead: ScoreableLead & { status?: string | null; is_favorite?: boolean },
 ) {
   const computed = scoreLead(lead);
+  const aiBreakdown = dictionaryBreakdownToAiScoreBreakdown(computed.breakdown, computed.score);
 
   return {
     ...lead,
-    score: computed.score,
-    score_breakdown: computed.breakdown,
-    score_explanation: computed.explanation,
+    ai_score: computed.score,
+    ai_score_breakdown: aiBreakdown,
     updated_at: new Date().toISOString(),
   };
 }
 
+/**
+ * Removes scoring persistence fields from insert/update payloads when the DB row is missing columns.
+ * Strips deprecated `score*` and canonical `ai_score*` so a minimal row can still be saved.
+ */
 export function stripScoringPersistenceFields<T extends Record<string, unknown>>(payload: T) {
   const rest = { ...payload };
+  delete rest.score;
   delete rest.score_breakdown;
   delete rest.score_explanation;
+  delete rest.ai_score;
+  delete rest.ai_score_breakdown;
   delete rest.updated_at;
 
-  return rest as Omit<T, "score_breakdown" | "score_explanation" | "updated_at">;
+  return rest as Omit<
+    T,
+    "score" | "score_breakdown" | "score_explanation" | "ai_score" | "ai_score_breakdown" | "updated_at"
+  >;
 }
 
 export function isMissingColumnError(message: string | undefined, columnName: string) {
@@ -1168,4 +1271,9 @@ function normalizeText(value: string | null | undefined) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function toFiniteNumberOrNull(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }

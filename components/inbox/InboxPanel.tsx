@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, List, Mail, RefreshCw, Star } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { pickContactEmailForLead, pickReplyTarget } from "@/lib/inbox";
+import { buildReplySubject, pickContactEmailForLead, pickReplyTarget } from "@/lib/inbox";
+import { threadLeadToLead } from "@/lib/inbox/threadLeadToLead";
 import type { InboxThreadSummary, ThreadMessageDetail } from "@/types/inbox";
-import { FollowUpModal } from "./FollowUpModal";
-import { ReplyModal } from "./ReplyModal";
 import { ThreadCard } from "./ThreadCard";
-import { primaryButton } from "@/lib/ui";
+import { getSuggestedScheduleNotes } from "@/lib/calendar/suggestedActionText";
+import { toDateInputValue } from "@/lib/calendar/localDateInputs";
+import { openFloatingCalendarEditor } from "@/lib/stores/calendarEditorStore";
+import { openFloatingCompose } from "@/lib/stores/composeStore";
+import { primaryButton, secondaryButton } from "@/lib/ui";
 
 type InboxTab = "all" | "favorites" | "action";
 
@@ -25,8 +28,6 @@ export function InboxPanel() {
   const [detailCache, setDetailCache] = useState<Record<string, ThreadMessageDetail[]>>({});
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [linkingThreadId, setLinkingThreadId] = useState<string | null>(null);
-  const [followThread, setFollowThread] = useState<InboxThreadSummary | null>(null);
-  const [replyThread, setReplyThread] = useState<InboxThreadSummary | null>(null);
 
   const displayedThreads = useMemo(() => {
     if (inboxTab === "favorites") {
@@ -101,18 +102,20 @@ export function InboxPanel() {
     setSyncing(true);
     setError(null);
     try {
-      const res = await fetch("/api/email/sync", {
+      console.log("🔄 Refresh clicked");
+      const response = await fetch("/api/email/sync", {
         method: "POST",
         credentials: "include",
       });
-      const data = await res.json();
-      if (!res.ok) {
+      console.log("✅ Sync response", response.status);
+      const data = await response.json();
+      if (!response.ok) {
         setError(data.error || "Failed to sync inbox");
         return;
       }
       await fetchEmailsFromDB();
     } catch (err) {
-      console.error(err);
+      console.error("❌ Sync failed", err);
       setError("Failed to sync inbox");
     } finally {
       setSyncing(false);
@@ -146,23 +149,72 @@ export function InboxPanel() {
     })();
   }, [expandedThreadId, detailCache]);
 
-  async function sendEmail(payload: { to: string; subject: string; body: string; threadId: string }) {
-    try {
-      const res = await fetch("/api/email/send", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { ok: false as const, error: data.error || "Send failed" };
+  async function openComposeReplyFromThread(thread: InboxThreadSummary) {
+    setError(null);
+    const target = pickReplyTarget(mailboxEmail, thread.messages);
+    const contact = pickContactEmailForLead(mailboxEmail, thread.messages);
+    const to = target?.to ?? contact?.email ?? thread.lead?.email?.trim() ?? "";
+    const subject = buildReplySubject(thread.subject);
+
+    let content = "";
+    let lead = thread.lead ? threadLeadToLead(thread.lead) : null;
+    if (thread.lead) {
+      try {
+        const res = await fetch("/api/ai/draft-message", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId: thread.lead.id }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+        if (!res.ok) {
+          setError(data.error || "Draft failed");
+          return;
+        }
+        content = typeof data.message === "string" ? data.message : "";
+      } catch (e) {
+        console.error(e);
+        setError("Draft failed");
+        return;
       }
-      return { ok: true as const };
-    } catch (e) {
-      console.error(e);
-      return { ok: false as const, error: "Send failed" };
     }
+
+    openFloatingCompose({
+      mode: "reply",
+      lead,
+      to,
+      subject,
+      content,
+      gmailThreadId: thread.thread_id,
+    });
+  }
+
+  function openComposeNewFromThread(thread: InboxThreadSummary) {
+    setError(null);
+    const target = pickReplyTarget(mailboxEmail, thread.messages);
+    const contact = pickContactEmailForLead(mailboxEmail, thread.messages);
+    const to = target?.to ?? contact?.email ?? thread.lead?.email?.trim() ?? "";
+    const lead = thread.lead ? threadLeadToLead(thread.lead) : null;
+    openFloatingCompose({
+      mode: "new",
+      lead,
+      to,
+      subject: "",
+      content: "",
+      gmailThreadId: null,
+    });
+  }
+
+  function openScheduleFromThread(thread: InboxThreadSummary) {
+    if (!thread.lead) return;
+    openFloatingCalendarEditor({
+      lead: threadLeadToLead(thread.lead),
+      draftEvent: {
+        date: toDateInputValue(new Date()),
+        time: null,
+        notes: getSuggestedScheduleNotes(thread.lead),
+      },
+    });
   }
 
   async function handleAddLead(t: InboxThreadSummary) {
@@ -239,12 +291,10 @@ export function InboxPanel() {
     }
   }
 
-  const replyTarget = replyThread ? pickReplyTarget(mailboxEmail, replyThread.messages) : null;
-
   const busy = fetching || syncing;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6 shadow-lg backdrop-blur transition-all duration-200 ease-out hover:scale-[1.01]">
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "12px", flexWrap: "wrap" }}>
         <button
           type="button"
@@ -252,7 +302,7 @@ export function InboxPanel() {
           disabled={busy}
           title="Sync with Gmail"
           aria-label="Sync with Gmail"
-          className={`inline-flex items-center justify-center rounded-[10px] border-0 p-2.5 ${primaryButton}`}
+          className={`inline-flex items-center justify-center p-2.5 ${primaryButton}`}
         >
           <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} aria-hidden />
         </button>
@@ -267,21 +317,13 @@ export function InboxPanel() {
                 `${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/callback/google`,
               )
             }
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "8px",
-              borderRadius: "10px",
-              border: "1px solid #1AB523",
-              color: "#1AB523",
-            }}
+            className={`inline-flex items-center justify-center p-2 transition-all duration-200 ${secondaryButton}`}
           >
             <Mail className="h-4 w-4" aria-hidden />
           </a>
         )}
         {sessionReady && !loggedIn && (
-          <span style={{ fontSize: "13px", color: "#6b7280" }}>Log in to connect Gmail.</span>
+          <span style={{ fontSize: "13px", color: "#64748b" }}>Log in to connect Gmail.</span>
         )}
       </div>
 
@@ -297,10 +339,10 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("all")}
-          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
+          className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
             inboxTab === "all"
-              ? "border-[#1AB523] bg-[#1AB523] text-white"
-              : "border-gray-200 bg-white hover:bg-[#1AB523]/10"
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-700"
           }`}
           title="All threads"
           aria-label="All threads"
@@ -310,10 +352,10 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("favorites")}
-          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
+          className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
             inboxTab === "favorites"
-              ? "border-[#1AB523] bg-[#1AB523] text-white"
-              : "border-gray-200 bg-white hover:bg-[#1AB523]/10"
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-700"
           }`}
           title="Favorites"
           aria-label="Favorites"
@@ -323,10 +365,10 @@ export function InboxPanel() {
         <button
           type="button"
           onClick={() => setInboxTab("action")}
-          className={`inline-flex items-center justify-center rounded-[10px] border p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
+          className={`inline-flex items-center justify-center rounded-lg border p-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1AB523] ${
             inboxTab === "action"
-              ? "border-[#1AB523] bg-[#1AB523] text-white"
-              : "border-gray-200 bg-white hover:bg-[#1AB523]/10"
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-700"
           }`}
           title="Needs action"
           aria-label="Needs action"
@@ -335,17 +377,17 @@ export function InboxPanel() {
         </button>
       </div>
 
-      <p style={{ margin: "0 0 12px", color: "#6b7280", fontSize: "13px" }}>
+      <p style={{ margin: "0 0 12px", color: "#64748b", fontSize: "13px" }}>
         Loads from the database on open. Use sync to pull new mail from Gmail.
       </p>
 
       {error && (
-        <p style={{ color: "#b91c1c", marginTop: 0, fontSize: "14px" }} role="alert">
+        <p style={{ color: "#dc2626", marginTop: 0, fontSize: "14px" }} role="alert">
           {error}
         </p>
       )}
 
-      <div style={{ display: "grid", gap: "14px" }}>
+      <div className="grid gap-2">
         {displayedThreads.map((thread) => {
           const expanded = expandedThreadId === thread.thread_id;
           return (
@@ -353,53 +395,29 @@ export function InboxPanel() {
               key={thread.thread_id}
               thread={thread}
               expanded={expanded}
-              onToggle={() => setExpandedThreadId(expanded ? null : thread.thread_id)}
+              onExpandedChange={(isExpanded) =>
+                setExpandedThreadId((current) => {
+                  if (!isExpanded) return current === thread.thread_id ? null : current;
+                  return thread.thread_id;
+                })
+              }
               detailMessages={detailCache[thread.thread_id]}
               detailLoading={detailLoadingId === thread.thread_id}
               linking={linkingThreadId === thread.thread_id}
               onAddLead={() => void handleAddLead(thread)}
               onToggleFavorite={() => void toggleFavorite(thread)}
               onMarkDone={() => void markDone(thread)}
-              onSchedulePlaceholder={() => console.log("Schedule clicked")}
+              onSchedule={() => openScheduleFromThread(thread)}
               onNoteSaved={() => void fetchEmailsFromDB()}
-              onOpenFollowUp={() => setFollowThread(thread)}
-              onOpenReply={() => setReplyThread(thread)}
+              onOpenComposeReply={() => void openComposeReplyFromThread(thread)}
+              onOpenComposeNew={() => openComposeNewFromThread(thread)}
             />
           );
         })}
       </div>
 
-      <FollowUpModal
-        open={Boolean(followThread)}
-        thread={followThread}
-        onClose={() => setFollowThread(null)}
-        onSend={async (body) => {
-          if (!followThread) return { ok: false, error: "No thread" };
-          const target = pickReplyTarget(mailboxEmail, followThread.messages);
-          if (!target) {
-            return { ok: false, error: "Could not resolve recipient" };
-          }
-          const subj = /^re:\s*/i.test(target.subject.trim()) ? target.subject.trim() : `Re: ${target.subject.trim()}`;
-          return sendEmail({
-            to: target.to,
-            subject: subj,
-            body,
-            threadId: followThread.thread_id,
-          });
-        }}
-      />
-
-      <ReplyModal
-        open={Boolean(replyThread)}
-        initialTo={replyTarget?.to ?? ""}
-        initialSubject={replyTarget?.subject ?? replyThread?.subject ?? ""}
-        threadId={replyThread?.thread_id ?? ""}
-        onClose={() => setReplyThread(null)}
-        onSend={sendEmail}
-      />
-
       {displayedThreads.length === 0 && !fetching && !syncing && (
-        <p style={{ color: "#6b7280", fontSize: "14px", marginTop: "12px" }}>
+        <p style={{ color: "#64748b", fontSize: "14px", marginTop: "12px" }}>
           No threads in this view. Connect Gmail and sync, or switch tabs.
         </p>
       )}

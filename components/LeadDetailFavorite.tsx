@@ -21,7 +21,21 @@ export function LeadDetailFavorite({ leadId, initialFavorite }: LeadDetailFavori
 
     setFavorite(next);
 
-    const { error } = await supabase.from("leads").update({ is_favorite: next }).eq("id", leadId);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user?.id) {
+      console.error("Favorite toggle user error:", userError);
+      setFavorite(current);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("leads")
+      .update({ is_favorite: next })
+      .eq("id", leadId)
+      .eq("user_id", user.id);
 
     if (error) {
       console.error(error);
