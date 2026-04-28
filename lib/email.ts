@@ -9,54 +9,33 @@ function decodeGmailBodyData(data: string): string {
   return Buffer.from(normalized + pad, "base64").toString("utf-8");
 }
 
-type MimeAccumulator = { plain: string[]; html: string[] };
-
-/**
- * Recursively walk Gmail message parts; collect all text/plain and text/html bodies.
- * Inline parts use body.data; attachmentId-only parts are skipped (would require attachments.get).
- */
-function collectBodiesFromPart(part: gmail_v1.Schema$MessagePart | undefined, acc: MimeAccumulator): void {
-  if (!part) return;
-
-  const mime = part.mimeType?.toLowerCase() ?? "";
-
-  if (part.body?.data) {
-    if (mime.startsWith("text/plain")) {
-      try {
-        acc.plain.push(decodeGmailBodyData(part.body.data));
-      } catch {
-        /* invalid base64 */
-      }
-    } else if (mime.startsWith("text/html")) {
-      try {
-        acc.html.push(decodeGmailBodyData(part.body.data));
-      } catch {
-        /* invalid base64 */
-      }
-    }
-  }
-
-  if (part.parts?.length) {
-    for (const child of part.parts) {
-      collectBodiesFromPart(child, acc);
-    }
-  }
-}
-
 /**
  * Full message body for storage/display: prefers plain text, then HTML.
  */
-export function getEmailBodyFromMessage(message: gmail_v1.Schema$Message): string {
-  const acc: MimeAccumulator = { plain: [], html: [] };
-  collectBodiesFromPart(message.payload, acc);
+export function getEmailBodyFromMessage(message: any): string {
+  const payload = message?.payload;
+  if (!payload) return "";
 
-  const plain = acc.plain.join("\n\n").trim();
-  if (plain) return plain;
+  const extractBody = (part: any): string => {
+    if (!part) return "";
 
-  const html = acc.html.join("\n\n").trim();
-  if (html) return html;
+    if (part.body?.data) {
+      try {
+        return decodeGmailBodyData(part.body.data);
+      } catch {
+        return "";
+      }
+    }
 
-  return "(No body)";
+    const parts = part.parts || [];
+    if (parts.length > 0) {
+      return parts.map(extractBody).join("");
+    }
+
+    return "";
+  };
+
+  return extractBody(payload);
 }
 
 /**
