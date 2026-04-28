@@ -25,8 +25,9 @@ function leadNeedsAction(lead: Lead): boolean {
 function showActionWindowForPath(pathname: string | null): boolean {
   if (!pathname) return false;
   if (pathname === "/") return true;
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) return true;
   if (pathname === "/inbox" || pathname.startsWith("/inbox/")) return true;
-  if (pathname === "/leads") return true;
+  if (pathname === "/leads" || pathname.startsWith("/leads/")) return true;
   if (pathname === "/calendar" || pathname.startsWith("/calendar/")) return true;
   return false;
 }
@@ -188,6 +189,12 @@ export function ActionWindowRoot() {
   }
 
   const fabVisible = routeOk && authChecked && sessionOk;
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" && routeOk) {
+      console.log("Seed FAB mounted", { pathname });
+    }
+  }, [pathname, routeOk]);
 
   function greetingLabel(): string {
     const h = new Date().getHours();
