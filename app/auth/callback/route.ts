@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
 
-  let response = NextResponse.redirect(new URL("/seed", request.url));
+  const response = NextResponse.redirect(new URL("/seed", request.url));
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -18,7 +18,6 @@ export async function GET(request: Request) {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          response = NextResponse.redirect(new URL("/seed", request.url));
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });

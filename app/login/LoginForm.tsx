@@ -9,6 +9,9 @@ import { primaryButton, secondaryButton } from "@/lib/ui";
 export function LoginForm() {
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error") ?? searchParams.get("reason");
+  const canonicalOrigin =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    (typeof window !== "undefined" ? window.location.origin : "");
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "oauth" | "sent" | "error">("idle");
@@ -19,8 +22,7 @@ export function LoginForm() {
     setStatus("sending");
     setMessage(null);
 
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const emailRedirectTo = `${origin}/auth/callback`;
+    const emailRedirectTo = `${canonicalOrigin}/auth/callback`;
     console.log("MAGIC LINK REDIRECT:", emailRedirectTo);
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
@@ -43,8 +45,7 @@ export function LoginForm() {
   async function continueWithGoogle() {
     setStatus("oauth");
     setMessage(null);
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const redirectTo = `${origin}/auth/callback`;
+    const redirectTo = `${canonicalOrigin}/auth/callback`;
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

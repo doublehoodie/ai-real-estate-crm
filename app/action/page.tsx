@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { ActionLandingClient } from "@/components/action/ActionLandingClient";
 
@@ -34,6 +35,9 @@ export default async function ActionPage() {
 
   if (authError) {
     console.error("[action] getUser:", authError);
+  }
+  if (!user) {
+    redirect("/login");
   }
 
   let attentionCount = 0;
