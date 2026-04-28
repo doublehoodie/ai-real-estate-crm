@@ -50,6 +50,7 @@ export function LoginForm() {
       provider: "google",
       options: {
         redirectTo,
+        scopes: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
         skipBrowserRedirect: true,
       },
     });

@@ -8,8 +8,3 @@ export function getPublicSiteOrigin(): string | undefined {
   return raw.replace(/\/$/, "");
 }
 
-/** Expected Gmail OAuth callback path on this deployment (when SITE_URL is set). */
-export function getGoogleOAuthCallbackUrl(): string | undefined {
-  const o = getPublicSiteOrigin();
-  return o ? `${o}/api/auth/callback/google` : undefined;
-}

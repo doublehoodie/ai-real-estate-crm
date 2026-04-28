@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { google } from "googleapis";
-import { getOAuthClient } from "@/lib/google";
 import {
   classifyMailboxDirection,
   extractEmailAddress,
@@ -20,39 +18,34 @@ import { triggerAiIfNeeded } from "@/lib/ai/triggerAiIfNeeded";
  */
 export async function POST() {
   try {
+    console.log("Running inbox sync...");
     console.log("🚀 SYNC ROUTE HIT");
     const { supabase, userId } = await requireAuthUserId();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    console.log("SESSION:", session);
+    console.log("PROVIDER TOKEN:", session?.provider_token);
 
-    const { data: integration, error: integrationError } = await supabase
-      .from("user_integrations")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("provider", "gmail")
-      .single();
-
-    if (integrationError || !integration) {
-      console.error(integrationError);
-      return NextResponse.json({ error: "Gmail integration not found" }, { status: 404 });
+    const accessToken = session?.provider_token;
+    if (!accessToken) {
+      return new Response(
+        JSON.stringify({ error: "Missing Gmail token" }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    const oauth2Client = getOAuthClient();
-    oauth2Client.setCredentials({
-      access_token: integration.access_token as string | undefined,
-      refresh_token: integration.refresh_token as string | undefined,
-      expiry_date:
-        integration.expiry_date != null ? Number(integration.expiry_date) : undefined,
-    });
+    const profile = await gmailApiGet<{ emailAddress?: string }>(
+      "/gmail/v1/users/me/profile",
+      accessToken,
+    );
+    const mailboxEmail = extractEmailAddress(profile.emailAddress ?? "");
 
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-    const profile = await gmail.users.getProfile({ userId: "me" });
-    const mailboxEmail = extractEmailAddress(profile.data.emailAddress ?? "");
-
-    const listRes = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: 40,
-    });
-
-    const list = listRes.data.messages ?? [];
+    const listRes = await gmailApiGet<{ messages?: Array<{ id?: string | null }> }>(
+      "/gmail/v1/users/me/messages?maxResults=40",
+      accessToken,
+    );
+    const list = listRes.messages ?? [];
     console.log("[POST /api/email/sync] Fetched messages from Gmail:", list.length);
 
     let insertSuccessCount = 0;
@@ -62,13 +55,10 @@ export async function POST() {
     for (const messageRef of list) {
       if (!messageRef.id) continue;
 
-      const messageRes = await gmail.users.messages.get({
-        userId: "me",
-        id: messageRef.id,
-        format: "full",
-      });
-
-      const message = messageRes.data;
+      const message = await gmailApiGet<GmailMessage>(
+        `/gmail/v1/users/me/messages/${encodeURIComponent(messageRef.id)}?format=full`,
+        accessToken,
+      );
       const headers = message.payload?.headers ?? [];
       const from = getHeaderValue(headers, "from");
       const to = getHeaderValue(headers, "to");
@@ -226,6 +216,40 @@ export async function POST() {
     console.error(error);
     return NextResponse.json({ error: "Failed to sync inbox" }, { status: 500 });
   }
+}
+
+type GmailMessageHeader = { name?: string | null; value?: string | null };
+type GmailMessage = {
+  id?: string | null;
+  threadId?: string | null;
+  snippet?: string | null;
+  payload?: {
+    headers?: GmailMessageHeader[] | null;
+    body?: { data?: string | null } | null;
+    parts?: Array<{
+      mimeType?: string | null;
+      body?: { data?: string | null } | null;
+      parts?: Array<{
+        mimeType?: string | null;
+        body?: { data?: string | null } | null;
+      }> | null;
+    }> | null;
+  } | null;
+};
+
+async function gmailApiGet<T>(path: string, accessToken: string): Promise<T> {
+  const response = await fetch(`https://gmail.googleapis.com${path}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    cache: "no-store",
+  });
+  const data = (await response.json().catch(() => ({}))) as T & { error?: { message?: string } };
+  if (!response.ok) {
+    const message = data.error?.message || "Gmail API request failed";
+    throw new Error(message);
+  }
+  return data;
 }
 
 async function triggerLeadAiQualification({

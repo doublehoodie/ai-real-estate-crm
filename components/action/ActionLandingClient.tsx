@@ -15,6 +15,7 @@ import { toDateInputValue } from "@/lib/calendar/localDateInputs";
 import { CSVUploader } from "@/components/import/CSVUploader";
 import { clearAssistantSessionMessages } from "@/lib/stores/assistantSessionStore";
 import { getScoreBucketCounts } from "@/lib/scoring/scoreBuckets";
+import { supabase } from "@/lib/supabaseClient";
 
 type ActionLandingClientProps = {
   displayName: string;
@@ -120,7 +121,28 @@ export function ActionLandingClient({
     }
     if (actionId === "connect_gmail") {
       setBusyActionId(actionId);
-      window.location.href = "/api/auth/google";
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          scopes: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) {
+        console.error("Failed to connect Gmail", error);
+        setBusyActionId(null);
+        return;
+      }
+      if (data?.url) {
+        window.location.assign(data.url);
+        return;
+      }
+      setBusyActionId(null);
       return;
     }
     if (actionId === "add_lead") {

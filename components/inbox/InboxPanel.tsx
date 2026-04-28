@@ -122,6 +122,34 @@ export function InboxPanel() {
     }
   }, [fetchEmailsFromDB]);
 
+  const connectGmail = useCallback(async () => {
+    setError(null);
+    try {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          scopes: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+          skipBrowserRedirect: true,
+        },
+      });
+      if (oauthError) {
+        setError(oauthError.message || "Failed to connect Gmail");
+        return;
+      }
+      if (data?.url) {
+        window.location.assign(data.url);
+      }
+    } catch (err) {
+      console.error("Gmail OAuth failed", err);
+      setError("Failed to connect Gmail");
+    }
+  }, []);
+
   useEffect(() => {
     if (!expandedThreadId) return;
     if (detailCache[expandedThreadId]) return;
@@ -307,20 +335,15 @@ export function InboxPanel() {
           <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} aria-hidden />
         </button>
         {sessionReady && loggedIn && (
-          <a
-            href="/api/auth/google"
+          <button
+            type="button"
             title="Connect Gmail"
             aria-label="Connect Gmail"
-            onClick={() =>
-              console.log(
-                "Redirect URL:",
-                `${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/callback/google`,
-              )
-            }
+            onClick={() => void connectGmail()}
             className={`inline-flex items-center justify-center p-2 transition-all duration-200 ${secondaryButton}`}
           >
             <Mail className="h-4 w-4" aria-hidden />
-          </a>
+          </button>
         )}
         {sessionReady && !loggedIn && (
           <span style={{ fontSize: "13px", color: "#64748b" }}>Log in to connect Gmail.</span>
